@@ -19,16 +19,14 @@ app.use(BodyParser.json());
 
 const connectionString = "mongodb+srv://"+process.env.MONGO_USERNAME+":"+process.env.MONGO_PASSWORD+"@deven.bppkn.mongodb.net/Event_Management_System";
 
-app.use('/login',Login);
-app.use('/user',SignUp);
-app.use('/event',Event);
-
 mongoose.connect(connectionString).then(()=>{
     console.log("Connected to MongoDB Database SuccessFully");
+    
+    app.use('/login',Login);
+    app.use('/user',SignUp);
+    app.use('/event',Event)
     
     app.listen(PORT,()=>{
         console.log(`Server is running on port ${PORT}`);
     })
-});
-
-module.exports = app;
+})
