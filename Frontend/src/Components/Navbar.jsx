@@ -63,14 +63,21 @@ const Navbar = () => {
         };
     }, [dropdownRef]);
 
+    // Handle keyboard navigation for dropdown
+    const handleDropdownKeyDown = (e) => {
+        if (e.key === 'Escape') {
+            setIsDropdownOpen(false);
+        }
+    };
+
     return (
         <div className="min-h-screen relative">
             <Background3D />
-            <nav className="w-full bg-gray-900/80 backdrop-blur-md text-white py-4 shadow-lg sticky top-0 z-50">
+            <nav className="w-full bg-gray-900/80 backdrop-blur-md text-white py-4 shadow-lg sticky top-0 z-50" role="navigation" aria-label="Main navigation">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="flex justify-between items-center">
                         {/* Logo and Title */}
-                        <Link to="/" className="text-white text-2xl md:text-3xl font-extrabold">
+                        <Link to="/" className="text-white text-2xl md:text-3xl font-extrabold" aria-label="EventBooking Home">
                             EventBooking
                         </Link>
 
@@ -78,9 +85,12 @@ const Navbar = () => {
                         <div className="md:hidden">
                             <button
                                 onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                                className="text-white focus:outline-none"
+                                className="text-white focus:outline-none focus:ring-2 focus:ring-white"
+                                aria-expanded={isMobileMenuOpen}
+                                aria-controls="mobile-menu"
+                                aria-label={isMobileMenuOpen ? "Close menu" : "Open menu"}
                             >
-                                <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d={isMobileMenuOpen ? "M6 18L18 6M6 6l12 12" : "M4 6h16M4 12h16M4 18h16"}></path>
                                 </svg>
                             </button>
@@ -88,17 +98,17 @@ const Navbar = () => {
 
                         {/* Desktop Navigation Links */}
                         <div className="hidden md:flex space-x-6 items-center">
-                            <Link to="/eventDemo" className="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium">Event Demo</Link>
+                            <Link to="/eventDemo" className="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium focus:outline-none focus:ring-2 focus:ring-white">Event Demo</Link>
                             {isLoggedIn ? (
                                 <>
-                                    <Link to="/home" className="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium">Home</Link>
-                                    <Link to="/eventCard" className="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium">All Events</Link>
-                                    <Link to="/eventForm" className="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium">Create Event</Link>
-                                    <Link to="/myBookings" className="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium">My Bookings</Link>
+                                    <Link to="/home" className="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium focus:outline-none focus:ring-2 focus:ring-white">Home</Link>
+                                    <Link to="/eventCard" className="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium focus:outline-none focus:ring-2 focus:ring-white">All Events</Link>
+                                    <Link to="/eventForm" className="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium focus:outline-none focus:ring-2 focus:ring-white">Create Event</Link>
+                                    <Link to="/myBookings" className="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium focus:outline-none focus:ring-2 focus:ring-white">My Bookings</Link>
                                 </>
                             ) : null}
-                            <Link to="/about" className="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium">About</Link>
-                            <Link to="/contact" className="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium">Contact</Link>
+                            <Link to="/about" className="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium focus:outline-none focus:ring-2 focus:ring-white">About</Link>
+                            <Link to="/contact" className="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium focus:outline-none focus:ring-2 focus:ring-white">Contact</Link>
                         </div>
 
                         {/* Desktop Profile/Login */}
@@ -107,7 +117,11 @@ const Navbar = () => {
                                 <div className="relative" ref={dropdownRef}>
                                     <button
                                         onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                                        className="flex items-center justify-center focus:outline-none"
+                                        className="flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-white"
+                                        aria-haspopup="true"
+                                        aria-expanded={isDropdownOpen}
+                                        onKeyDown={handleDropdownKeyDown}
+                                        aria-label="User profile menu"
                                     >
                                         <img 
                                             src="https://randomuser.me/api/portraits/men/32.jpg" 
@@ -116,11 +130,12 @@ const Navbar = () => {
                                         />
                                     </button>
                                     {isDropdownOpen && (
-                                        <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-20">
+                                        <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-20" role="menu" aria-orientation="vertical" aria-labelledby="user-menu-button">
                                             <Link
                                                 to="/profile"
-                                                className="block px-4 py-2 text-gray-800 hover:bg-gray-200"
+                                                className="block px-4 py-2 text-gray-800 hover:bg-gray-200 focus:outline-none focus:bg-gray-200 focus:ring-2 focus:ring-indigo-500"
                                                 onClick={() => setIsDropdownOpen(false)} // Close dropdown on click
+                                                role="menuitem"
                                             >
                                                 My Profile
                                             </Link>
@@ -129,7 +144,8 @@ const Navbar = () => {
                                                     handleLogout();
                                                     setIsDropdownOpen(false); // Close dropdown on logout
                                                 }}
-                                                className="block w-full text-left px-4 py-2 text-gray-800 hover:bg-gray-200"
+                                                className="block w-full text-left px-4 py-2 text-gray-800 hover:bg-gray-200 focus:outline-none focus:bg-gray-200 focus:ring-2 focus:ring-indigo-500"
+                                                role="menuitem"
                                             >
                                                 Logout
                                             </button>
@@ -138,10 +154,10 @@ const Navbar = () => {
                                 </div>
                             ) : (
                                 <div className="flex space-x-6">
-                                    <button onClick={() => navigate('/login')} className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-md text-lg">
+                                    <button onClick={() => navigate('/login')} className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-md text-lg focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-gray-900">
                                         Login
                                     </button>
-                                    <button onClick={() => navigate('/signUp')} className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-md text-lg">
+                                    <button onClick={() => navigate('/signUp')} className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-md text-lg focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-gray-900">
                                         SignUp
                                     </button>
                                 </div>
@@ -152,32 +168,33 @@ const Navbar = () => {
 
                 {/* Mobile Menu */}
                 {isMobileMenuOpen && (
-                    <div className="md:hidden bg-gray-900 px-2 pt-2 pb-3 space-y-1 sm:px-3">
-                        <Link to="/about" onClick={() => setIsMobileMenuOpen(false)} className="block text-gray-300 hover:text-white px-3 py-2 rounded-md text-base font-medium">About</Link>
-                        <Link to="/contact" onClick={() => setIsMobileMenuOpen(false)} className="block text-gray-300 hover:text-white px-3 py-2 rounded-md text-base font-medium">Contact</Link>
-                        <Link to="/eventDemo" onClick={() => setIsMobileMenuOpen(false)} className="block text-gray-300 hover:text-white px-3 py-2 rounded-md text-base font-medium">Event Demo</Link>
+                    <div id="mobile-menu" className="md:hidden bg-gray-900 px-2 pt-2 pb-3 space-y-1 sm:px-3" role="menubar">
+                        <Link to="/about" onClick={() => setIsMobileMenuOpen(false)} className="block text-gray-300 hover:text-white px-3 py-2 rounded-md text-base font-medium focus:outline-none focus:ring-2 focus:ring-white" role="menuitem">About</Link>
+                        <Link to="/contact" onClick={() => setIsMobileMenuOpen(false)} className="block text-gray-300 hover:text-white px-3 py-2 rounded-md text-base font-medium focus:outline-none focus:ring-2 focus:ring-white" role="menuitem">Contact</Link>
+                        <Link to="/eventDemo" onClick={() => setIsMobileMenuOpen(false)} className="block text-gray-300 hover:text-white px-3 py-2 rounded-md text-base font-medium focus:outline-none focus:ring-2 focus:ring-white" role="menuitem">Event Demo</Link>
                         {isLoggedIn ? (
                             <>
-                                <Link to="/home" onClick={() => setIsMobileMenuOpen(false)} className="block text-gray-300 hover:text-white px-3 py-2 rounded-md text-base font-medium">Home</Link>
-                                <Link to="/eventCard" onClick={() => setIsMobileMenuOpen(false)} className="block text-gray-300 hover:text-white px-3 py-2 rounded-md text-base font-medium">All Events</Link>
-                                <Link to="/eventForm" onClick={() => setIsMobileMenuOpen(false)} className="block text-gray-300 hover:text-white px-3 py-2 rounded-md text-base font-medium">Create Event</Link>
-                                <Link to="/myBookings" onClick={() => setIsMobileMenuOpen(false)} className="block text-gray-300 hover:text-white px-3 py-2 rounded-md text-base font-medium">My Bookings</Link>
+                                <Link to="/home" onClick={() => setIsMobileMenuOpen(false)} className="block text-gray-300 hover:text-white px-3 py-2 rounded-md text-base font-medium focus:outline-none focus:ring-2 focus:ring-white" role="menuitem">Home</Link>
+                                <Link to="/eventCard" onClick={() => setIsMobileMenuOpen(false)} className="block text-gray-300 hover:text-white px-3 py-2 rounded-md text-base font-medium focus:outline-none focus:ring-2 focus:ring-white" role="menuitem">All Events</Link>
+                                <Link to="/eventForm" onClick={() => setIsMobileMenuOpen(false)} className="block text-gray-300 hover:text-white px-3 py-2 rounded-md text-base font-medium focus:outline-none focus:ring-2 focus:ring-white" role="menuitem">Create Event</Link>
+                                <Link to="/myBookings" onClick={() => setIsMobileMenuOpen(false)} className="block text-gray-300 hover:text-white px-3 py-2 rounded-md text-base font-medium focus:outline-none focus:ring-2 focus:ring-white" role="menuitem">My Bookings</Link>
                                 <button
                                     onClick={() => {
                                         handleLogout();
                                         setIsMobileMenuOpen(false);
                                     }}
-                                    className="block w-full text-left text-gray-300 hover:text-white px-3 py-2 rounded-md text-base font-medium"
+                                    className="block w-full text-left text-gray-300 hover:text-white px-3 py-2 rounded-md text-base font-medium focus:outline-none focus:ring-2 focus:ring-white"
+                                    role="menuitem"
                                 >
                                     Logout
                                 </button>
                             </>
                         ) : (
                             <div className="flex flex-col space-y-2 mt-4">
-                                <button onClick={() => { navigate('/login'); setIsMobileMenuOpen(false); }} className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-base font-medium">
+                                <button onClick={() => { navigate('/login'); setIsMobileMenuOpen(false); }} className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-base font-medium focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-gray-900">
                                     Login
                                 </button>
-                                <button onClick={() => { navigate('/signUp'); setIsMobileMenuOpen(false); }} className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md text-base font-medium">
+                                <button onClick={() => { navigate('/signUp'); setIsMobileMenuOpen(false); }} className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md text-base font-medium focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-gray-900">
                                     SignUp
                                 </button>
                             </div>
@@ -197,4 +214,3 @@ const Navbar = () => {
 };
 
 export default Navbar;
-

@@ -56,8 +56,7 @@ const EventForm = () => {
         if (data.startDate && data.endDate) {
             const start = new Date(data.startDate);
             const end = new Date(data.endDate);
-            
-            if (start > end) {
+            if (start >= end) {
                 newErrors.endDate = "End date must be after start date";
             }
         }
@@ -193,8 +192,15 @@ const EventForm = () => {
         }
     };
 
-    const inputClasses = "w-full px-4 py-3 bg-gray-800/50 border border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-white placeholder-gray-500 transition-all duration-200";
-    const errorInputClasses = "w-full px-4 py-3 bg-gray-800/50 border border-red-500 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent text-white placeholder-gray-500 transition-all duration-200";
+    // Accessibility: Handle Enter key press for form submission
+    const handleKeyPress = (e) => {
+        if (e.key === 'Enter' && e.ctrlKey) {
+            handleCreate(e);
+        }
+    };
+
+    const inputClasses = "w-full px-4 py-3 bg-gray-800/50 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all";
+    const errorInputClasses = "w-full px-4 py-3 bg-gray-800/50 border-2 border-red-500 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all";
     const labelClasses = "block text-sm font-medium text-gray-300 mb-2";
     const errorLabelClasses = "block text-sm font-medium text-red-400 mb-2";
     const errorMessageClasses = "text-red-400 text-sm mt-1";
@@ -211,32 +217,42 @@ const EventForm = () => {
                         <p className="text-gray-400">Fill in the details below to publish your event to the world.</p>
                     </div>
 
-                    <form onSubmit={handleCreate} className="space-y-6">
+                    <form onSubmit={handleCreate} className="space-y-6" onKeyPress={handleKeyPress} aria-label="Event Creation Form">
                         {/* Event Details */}
                         <div>
-                            <h3 className={sectionTitleClasses}>Event Details</h3>
+                            <h3 className={sectionTitleClasses} id="event-details-section">Event Details</h3>
                             <div className="grid gap-6 grid-cols-1 md:grid-cols-2">
                                 <div>
-                                    <label className={errors.eventName ? errorLabelClasses : labelClasses}>Event Name</label>
+                                    <label htmlFor="eventName" className={errors.eventName ? errorLabelClasses : labelClasses}>
+                                        Event Name
+                                    </label>
                                     <input
                                         type="text"
+                                        id="eventName"
                                         name="eventName"
                                         className={errors.eventName ? errorInputClasses : inputClasses}
                                         placeholder="e.g. Tech Conference 2024"
                                         value={data.eventName}
                                         onChange={handleChange}
                                         required
+                                        aria-describedby={errors.eventName ? "eventName-error" : undefined}
+                                        aria-invalid={!!errors.eventName}
                                     />
-                                    {errors.eventName && <p className={errorMessageClasses}>{errors.eventName}</p>}
+                                    {errors.eventName && <p id="eventName-error" className={errorMessageClasses}>{errors.eventName}</p>}
                                 </div>
                                 <div>
-                                    <label className={errors.eventCategory ? errorLabelClasses : labelClasses}>Category</label>
+                                    <label htmlFor="eventCategory" className={errors.eventCategory ? errorLabelClasses : labelClasses}>
+                                        Category
+                                    </label>
                                     <select
+                                        id="eventCategory"
                                         name="eventCategory"
                                         className={errors.eventCategory ? errorInputClasses : inputClasses}
                                         value={data.eventCategory}
                                         onChange={handleChange}
                                         required
+                                        aria-describedby={errors.eventCategory ? "eventCategory-error" : undefined}
+                                        aria-invalid={!!errors.eventCategory}
                                     >
                                         <option value="" className="bg-gray-800">Select Category</option>
                                         <option value="Webinar" className="bg-gray-800">Webinar</option>
@@ -245,187 +261,241 @@ const EventForm = () => {
                                         <option value="Social Event" className="bg-gray-800">Social Event</option>
                                         <option value="Concert" className="bg-gray-800">Concert</option>
                                     </select>
-                                    {errors.eventCategory && <p className={errorMessageClasses}>{errors.eventCategory}</p>}
+                                    {errors.eventCategory && <p id="eventCategory-error" className={errorMessageClasses}>{errors.eventCategory}</p>}
                                 </div>
                                 <div className="col-span-1 md:col-span-2">
-                                    <label className={errors.eventDescription ? errorLabelClasses : labelClasses}>Description</label>
+                                    <label htmlFor="eventDescription" className={errors.eventDescription ? errorLabelClasses : labelClasses}>
+                                        Description
+                                    </label>
                                     <textarea
+                                        id="eventDescription"
                                         name="eventDescription"
-                                        className={`${errors.eventDescription ? errorInputClasses : inputClasses} resize-none`}
-                                        placeholder="Tell people what your event is about..."
                                         rows="4"
+                                        className={errors.eventDescription ? errorInputClasses : inputClasses}
+                                        placeholder="Describe your event in detail..."
                                         value={data.eventDescription}
                                         onChange={handleChange}
                                         required
+                                        aria-describedby={errors.eventDescription ? "eventDescription-error" : undefined}
+                                        aria-invalid={!!errors.eventDescription}
                                     ></textarea>
-                                    {errors.eventDescription && <p className={errorMessageClasses}>{errors.eventDescription}</p>}
+                                    {errors.eventDescription && <p id="eventDescription-error" className={errorMessageClasses}>{errors.eventDescription}</p>}
                                 </div>
                             </div>
                         </div>
 
-                        {/* Date and Time */}
+                        {/* Date & Time */}
                         <div>
-                            <h3 className={sectionTitleClasses}>Date & Time</h3>
+                            <h3 className={sectionTitleClasses} id="date-time-section">Date & Time</h3>
                             <div className="grid gap-6 grid-cols-1 md:grid-cols-2">
                                 <div>
-                                    <label className={errors.startDate ? errorLabelClasses : labelClasses}>Start Date & Time</label>
+                                    <label htmlFor="startDate" className={errors.startDate ? errorLabelClasses : labelClasses}>
+                                        Start Date & Time
+                                    </label>
                                     <input
                                         type="datetime-local"
+                                        id="startDate"
                                         name="startDate"
                                         className={errors.startDate ? errorInputClasses : inputClasses}
                                         value={data.startDate}
                                         onChange={handleChange}
                                         required
+                                        aria-describedby={errors.startDate ? "startDate-error" : undefined}
+                                        aria-invalid={!!errors.startDate}
                                     />
-                                    {errors.startDate && <p className={errorMessageClasses}>{errors.startDate}</p>}
+                                    {errors.startDate && <p id="startDate-error" className={errorMessageClasses}>{errors.startDate}</p>}
                                 </div>
                                 <div>
-                                    <label className={errors.endDate ? errorLabelClasses : labelClasses}>End Date & Time</label>
+                                    <label htmlFor="endDate" className={errors.endDate ? errorLabelClasses : labelClasses}>
+                                        End Date & Time
+                                    </label>
                                     <input
                                         type="datetime-local"
+                                        id="endDate"
                                         name="endDate"
                                         className={errors.endDate ? errorInputClasses : inputClasses}
                                         value={data.endDate}
                                         onChange={handleChange}
                                         required
+                                        aria-describedby={errors.endDate ? "endDate-error" : undefined}
+                                        aria-invalid={!!errors.endDate}
                                     />
-                                    {errors.endDate && <p className={errorMessageClasses}>{errors.endDate}</p>}
+                                    {errors.endDate && <p id="endDate-error" className={errorMessageClasses}>{errors.endDate}</p>}
                                 </div>
                             </div>
                         </div>
 
                         {/* Location */}
                         <div>
-                            <h3 className={sectionTitleClasses}>Location</h3>
+                            <h3 className={sectionTitleClasses} id="location-section">Location</h3>
                             <div className="grid gap-6 grid-cols-1 md:grid-cols-2">
                                 <div>
-                                    <label className={errors.venueName ? errorLabelClasses : labelClasses}>Venue Name</label>
+                                    <label htmlFor="venueName" className={errors.venueName ? errorLabelClasses : labelClasses}>
+                                        Venue Name
+                                    </label>
                                     <input
                                         type="text"
+                                        id="venueName"
                                         name="venueName"
                                         className={errors.venueName ? errorInputClasses : inputClasses}
-                                        placeholder="e.g. Grand Hall"
+                                        placeholder="e.g. Convention Center"
                                         value={data.venueName}
                                         onChange={handleChange}
                                         required
+                                        aria-describedby={errors.venueName ? "venueName-error" : undefined}
+                                        aria-invalid={!!errors.venueName}
                                     />
-                                    {errors.venueName && <p className={errorMessageClasses}>{errors.venueName}</p>}
+                                    {errors.venueName && <p id="venueName-error" className={errorMessageClasses}>{errors.venueName}</p>}
                                 </div>
                                 <div>
-                                    <label className={errors.venueAddress ? errorLabelClasses : labelClasses}>Address</label>
+                                    <label htmlFor="venueAddress" className={errors.venueAddress ? errorLabelClasses : labelClasses}>
+                                        Address
+                                    </label>
                                     <input
                                         type="text"
+                                        id="venueAddress"
                                         name="venueAddress"
                                         className={errors.venueAddress ? errorInputClasses : inputClasses}
-                                        placeholder="e.g. 123 Main St, City"
+                                        placeholder="e.g. 123 Main Street, City"
                                         value={data.venueAddress}
                                         onChange={handleChange}
                                         required
+                                        aria-describedby={errors.venueAddress ? "venueAddress-error" : undefined}
+                                        aria-invalid={!!errors.venueAddress}
                                     />
-                                    {errors.venueAddress && <p className={errorMessageClasses}>{errors.venueAddress}</p>}
+                                    {errors.venueAddress && <p id="venueAddress-error" className={errorMessageClasses}>{errors.venueAddress}</p>}
                                 </div>
                             </div>
                         </div>
 
-                        {/* Organizer Details */}
+                        {/* Organizer */}
                         <div>
-                            <h3 className={sectionTitleClasses}>Organizer</h3>
+                            <h3 className={sectionTitleClasses} id="organizer-section">Organizer</h3>
                             <div className="grid gap-6 grid-cols-1 md:grid-cols-2">
                                 <div>
-                                    <label className={errors.organizerName ? errorLabelClasses : labelClasses}>Organizer Name</label>
+                                    <label htmlFor="organizerName" className={errors.organizerName ? errorLabelClasses : labelClasses}>
+                                        Organizer Name
+                                    </label>
                                     <input
                                         type="text"
+                                        id="organizerName"
                                         name="organizerName"
                                         className={errors.organizerName ? errorInputClasses : inputClasses}
-                                        placeholder="Your Name or Organization"
+                                        placeholder="e.g. John Smith"
                                         value={data.organizerName}
                                         onChange={handleChange}
                                         required
+                                        aria-describedby={errors.organizerName ? "organizerName-error" : undefined}
+                                        aria-invalid={!!errors.organizerName}
                                     />
-                                    {errors.organizerName && <p className={errorMessageClasses}>{errors.organizerName}</p>}
+                                    {errors.organizerName && <p id="organizerName-error" className={errorMessageClasses}>{errors.organizerName}</p>}
                                 </div>
                                 <div>
-                                    <label className={errors.organizerContact ? errorLabelClasses : labelClasses}>Contact Email/Phone</label>
+                                    <label htmlFor="organizerContact" className={errors.organizerContact ? errorLabelClasses : labelClasses}>
+                                        Contact Email/Phone
+                                    </label>
                                     <input
                                         type="text"
+                                        id="organizerContact"
                                         name="organizerContact"
                                         className={errors.organizerContact ? errorInputClasses : inputClasses}
-                                        placeholder="contact@example.com"
+                                        placeholder="e.g. john@example.com or +1234567890"
                                         value={data.organizerContact}
                                         onChange={handleChange}
                                         required
+                                        aria-describedby={errors.organizerContact ? "organizerContact-error" : undefined}
+                                        aria-invalid={!!errors.organizerContact}
                                     />
-                                    {errors.organizerContact && <p className={errorMessageClasses}>{errors.organizerContact}</p>}
+                                    {errors.organizerContact && <p id="organizerContact-error" className={errorMessageClasses}>{errors.organizerContact}</p>}
                                 </div>
                             </div>
                         </div>
 
                         {/* Ticketing */}
                         <div>
-                            <h3 className={sectionTitleClasses}>Ticketing</h3>
+                            <h3 className={sectionTitleClasses} id="ticketing-section">Ticketing</h3>
                             <div className="grid gap-6 grid-cols-1 md:grid-cols-3">
                                 <div>
-                                    <label className={errors.ticketPrice ? errorLabelClasses : labelClasses}>Price ($)</label>
+                                    <label htmlFor="ticketPrice" className={errors.ticketPrice ? errorLabelClasses : labelClasses}>
+                                        Price ($)
+                                    </label>
                                     <input
                                         type="number"
+                                        id="ticketPrice"
                                         name="ticketPrice"
-                                        className={errors.ticketPrice ? errorInputClasses : inputClasses}
-                                        placeholder="0.00"
                                         min="0"
                                         step="0.01"
+                                        className={errors.ticketPrice ? errorInputClasses : inputClasses}
+                                        placeholder="e.g. 25.99"
                                         value={data.ticketPrice}
                                         onChange={handleChange}
                                         required
+                                        aria-describedby={errors.ticketPrice ? "ticketPrice-error" : undefined}
+                                        aria-invalid={!!errors.ticketPrice}
                                     />
-                                    {errors.ticketPrice && <p className={errorMessageClasses}>{errors.ticketPrice}</p>}
+                                    {errors.ticketPrice && <p id="ticketPrice-error" className={errorMessageClasses}>{errors.ticketPrice}</p>}
                                 </div>
                                 <div>
-                                    <label className={errors.ticketType ? errorLabelClasses : labelClasses}>Ticket Type</label>
+                                    <label htmlFor="ticketType" className={errors.ticketType ? errorLabelClasses : labelClasses}>
+                                        Ticket Type
+                                    </label>
                                     <select
+                                        id="ticketType"
                                         name="ticketType"
                                         className={errors.ticketType ? errorInputClasses : inputClasses}
                                         value={data.ticketType}
                                         onChange={handleChange}
                                         required
+                                        aria-describedby={errors.ticketType ? "ticketType-error" : undefined}
+                                        aria-invalid={!!errors.ticketType}
                                     >
                                         <option value="" className="bg-gray-800">Select Type</option>
                                         <option value="Free" className="bg-gray-800">Free</option>
                                         <option value="Paid" className="bg-gray-800">Paid</option>
-                                        <option value="Donation" className="bg-gray-800">Donation</option>
                                     </select>
-                                    {errors.ticketType && <p className={errorMessageClasses}>{errors.ticketType}</p>}
+                                    {errors.ticketType && <p id="ticketType-error" className={errorMessageClasses}>{errors.ticketType}</p>}
                                 </div>
                                 <div>
-                                    <label className={errors.maxAttendees ? errorLabelClasses : labelClasses}>Max Attendees</label>
+                                    <label htmlFor="maxAttendees" className={errors.maxAttendees ? errorLabelClasses : labelClasses}>
+                                        Max Attendees
+                                    </label>
                                     <input
                                         type="number"
+                                        id="maxAttendees"
                                         name="maxAttendees"
+                                        min="1"
                                         className={errors.maxAttendees ? errorInputClasses : inputClasses}
                                         placeholder="e.g. 100"
-                                        min="1"
                                         value={data.maxAttendees}
                                         onChange={handleChange}
                                         required
+                                        aria-describedby={errors.maxAttendees ? "maxAttendees-error" : undefined}
+                                        aria-invalid={!!errors.maxAttendees}
                                     />
-                                    {errors.maxAttendees && <p className={errorMessageClasses}>{errors.maxAttendees}</p>}
+                                    {errors.maxAttendees && <p id="maxAttendees-error" className={errorMessageClasses}>{errors.maxAttendees}</p>}
                                 </div>
                             </div>
                         </div>
 
                         {/* Submit Button */}
-                        <div className="pt-8">
+                        <div className="pt-6">
                             <button
                                 type="submit"
                                 disabled={isLoading}
-                                className={`w-full flex justify-center py-4 px-6 border border-transparent text-lg font-bold rounded-lg text-white bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transform transition-all duration-200 shadow-lg hover:shadow-indigo-500/30 ${isLoading ? 'opacity-75 cursor-not-allowed' : 'hover:scale-[1.02]'}`}
+                                className={`w-full py-4 px-6 rounded-xl text-lg font-bold text-white transition-all shadow-lg transform hover:scale-[1.02] focus:outline-none focus:ring-4 focus:ring-indigo-500/50 ${
+                                    isLoading 
+                                        ? 'bg-indigo-700 cursor-not-allowed opacity-75' 
+                                        : 'bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700'
+                                }`}
+                                aria-busy={isLoading}
                             >
                                 {isLoading ? (
-                                    <span className="flex items-center">
-                                        <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                    <span className="flex items-center justify-center">
+                                        <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" aria-hidden="true">
                                             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                                             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                                         </svg>
-                                        Creating Event...
+                                        Processing...
                                     </span>
                                 ) : (
                                     'Publish Event'
