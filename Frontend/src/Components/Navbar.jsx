@@ -21,7 +21,6 @@ const Navbar = () => {
 
         checkLoginStatus();
         window.addEventListener("auth-change", checkLoginStatus);
-
         return () => window.removeEventListener("auth-change", checkLoginStatus);
     }, []);
 
@@ -54,12 +53,15 @@ const Navbar = () => {
                 setIsDropdownOpen(false);
             }
         };
-
         document.addEventListener("mousedown", handleClickOutside);
         return () => document.removeEventListener("mousedown", handleClickOutside);
     }, []);
 
-    // ============================ UI ================================
+    // ESC key closes dropdown
+    const handleDropdownKeyDown = (e) => {
+        if (e.key === "Escape") setIsDropdownOpen(false);
+    };
+
     return (
         <div className="min-h-screen relative">
             <Background3D />
@@ -109,7 +111,7 @@ const Navbar = () => {
                             <Link to="/about" className="nav-link">About</Link>
                             <Link to="/contact" className="nav-link">Contact</Link>
 
-                            {/* THEME TOGGLE */}
+                            {/* THEME SWITCH BUTTON */}
                             <ThemeToggle />
 
                             {/* PROFILE / LOGIN BUTTONS */}
@@ -117,6 +119,7 @@ const Navbar = () => {
                                 <div ref={dropdownRef} className="relative">
                                     <button
                                         onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                                        onKeyDown={handleDropdownKeyDown}
                                         className="focus:outline-none"
                                     >
                                         <img
@@ -150,18 +153,8 @@ const Navbar = () => {
                                 </div>
                             ) : (
                                 <div className="flex space-x-4">
-                                    <button
-                                        onClick={() => navigate("/login")}
-                                        className="btn-primary"
-                                    >
-                                        Login
-                                    </button>
-                                    <button
-                                        onClick={() => navigate("/signUp")}
-                                        className="btn-green"
-                                    >
-                                        SignUp
-                                    </button>
+                                    <button onClick={() => navigate("/login")} className="btn-primary">Login</button>
+                                    <button onClick={() => navigate("/signUp")} className="btn-green">SignUp</button>
                                 </div>
                             )}
                         </div>

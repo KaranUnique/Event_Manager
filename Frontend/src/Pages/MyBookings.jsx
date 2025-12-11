@@ -6,11 +6,13 @@ const MyBookings = () => {
     const [bookings, setBookings] = useState([]);
 
     useEffect(() => {
+        // In a real application, this would fetch from a backend endpoint
+        // For now, we'll keep using localStorage for user-specific bookings
         const storedBookings = JSON.parse(localStorage.getItem('myBookings') || '[]');
         setBookings(storedBookings);
     }, []);
 
-    const handleCancelBooking = (bookingId) => {
+    const handleCancelBooking = async (bookingId) => {
         Swal.fire({
             title: 'Cancel Booking?',
             text: "Are you sure you want to cancel this ticket?",
@@ -21,8 +23,10 @@ const MyBookings = () => {
             confirmButtonText: 'Yes, cancel it!',
             background: '#1f2937',
             color: '#fff'
-        }).then((result) => {
+        }).then(async (result) => {
             if (result.isConfirmed) {
+                // In a real application, this would make an API call to cancel the booking
+                // For now, we'll keep using localStorage for user-specific bookings
                 const updatedBookings = bookings.filter(booking => booking.bookingId !== bookingId);
                 localStorage.setItem('myBookings', JSON.stringify(updatedBookings));
                 setBookings(updatedBookings);

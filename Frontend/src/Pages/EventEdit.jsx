@@ -6,6 +6,7 @@ const EventEdit = () => {
     const params = useParams();
     const navigate = useNavigate();
     const [isLoading, setIsLoading] = useState(true);
+    const [errors, setErrors] = useState({});
 
     const [data, setData] = useState({
         eventName: "",
@@ -50,8 +51,100 @@ const EventEdit = () => {
             });
     }, [params.eventName]);
 
+    const validateForm = () => {
+        const newErrors = {};
+        
+        // Event name validation
+        if (!data.eventName.trim()) {
+            newErrors.eventName = "Event name is required";
+        } else if (data.eventName.length < 3) {
+            newErrors.eventName = "Event name must be at least 3 characters";
+        }
+        
+        // Category validation
+        if (!data.eventCategory) {
+            newErrors.eventCategory = "Please select a category";
+        }
+        
+        // Description validation
+        if (!data.eventDescription.trim()) {
+            newErrors.eventDescription = "Description is required";
+        } else if (data.eventDescription.length < 10) {
+            newErrors.eventDescription = "Description must be at least 10 characters";
+        }
+        
+        // Date validation
+        if (!data.startDate) {
+            newErrors.startDate = "Start date is required";
+        }
+        
+        if (!data.endDate) {
+            newErrors.endDate = "End date is required";
+        }
+        
+        if (data.startDate && data.endDate) {
+            const start = new Date(data.startDate);
+            const end = new Date(data.endDate);
+            
+            if (start > end) {
+                newErrors.endDate = "End date must be after start date";
+            }
+        }
+        
+        // Venue validation
+        if (!data.venueName.trim()) {
+            newErrors.venueName = "Venue name is required";
+        }
+        
+        if (!data.venueAddress.trim()) {
+            newErrors.venueAddress = "Venue address is required";
+        }
+        
+        // Organizer validation
+        if (!data.organizerName.trim()) {
+            newErrors.organizerName = "Organizer name is required";
+        }
+        
+        if (!data.organizerContact.trim()) {
+            newErrors.organizerContact = "Organizer contact is required";
+        }
+        
+        // Ticket validation
+        if (data.ticketPrice === "" || isNaN(data.ticketPrice)) {
+            newErrors.ticketPrice = "Valid ticket price is required";
+        } else if (parseFloat(data.ticketPrice) < 0) {
+            newErrors.ticketPrice = "Ticket price cannot be negative";
+        }
+        
+        if (!data.ticketType) {
+            newErrors.ticketType = "Please select a ticket type";
+        }
+        
+        if (data.maxAttendees === "" || isNaN(data.maxAttendees)) {
+            newErrors.maxAttendees = "Valid number of attendees is required";
+        } else if (parseInt(data.maxAttendees) <= 0) {
+            newErrors.maxAttendees = "Maximum attendees must be greater than 0";
+        }
+        
+        setErrors(newErrors);
+        return Object.keys(newErrors).length === 0;
+    };
+
     const handleSaveChanges = (e) => {
         e.preventDefault();
+        
+        if (!validateForm()) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Validation Error',
+                text: 'Please correct the errors in the form',
+                background: '#1f2937',
+                color: '#fff',
+                confirmButtonColor: '#ef4444'
+            });
+            return;
+        }
+        
         const update_url = `http://localhost:7120/event/updateEvent/${params.eventName}`;
         
         fetch(update_url, {
@@ -61,7 +154,14 @@ const EventEdit = () => {
             },
             body: JSON.stringify(data)
         })
-            .then(response => response.json())
+            .then(response => {
+                if (!response.ok) {
+                    return response.json().then(errorData => {
+                        throw new Error(errorData.message || 'Failed to update event');
+                    });
+                }
+                return response.json();
+            })
             .then(() => {
                 Swal.fire({
                     icon: 'success',
@@ -80,7 +180,7 @@ const EventEdit = () => {
                 Swal.fire({
                     icon: 'error',
                     title: 'Oops...',
-                    text: 'Something went wrong while updating the event!',
+                    text: error.message || 'Something went wrong while updating the event!',
                     background: '#1f2937',
                     color: '#fff',
                     confirmButtonColor: '#ef4444',
@@ -92,7 +192,22 @@ const EventEdit = () => {
     const handleChange = (e) => {
         const { name, value } = e.target;
         setData(prev => ({ ...prev, [name]: value }));
+        
+        // Clear error when user starts typing
+        if (errors[name]) {
+            setErrors(prev => {
+                const newErrors = { ...prev };
+                delete newErrors[name];
+                return newErrors;
+            });
+        }
     };
+
+    const inputClasses = "w-full bg-gray-800/50 border border-gray-600 rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all";
+    const errorInputClasses = "w-full bg-gray-800/50 border border-red-500 rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all";
+    const labelClasses = "block text-sm font-medium text-gray-300 mb-2";
+    const errorLabelClasses = "block text-sm font-medium text-red-400 mb-2";
+    const errorMessageClasses = "text-red-400 text-sm mt-1";
 
     if (isLoading) {
         return (
@@ -137,36 +252,38 @@ const EventEdit = () => {
                                 <h3 className="text-lg font-medium text-indigo-400 border-b border-gray-700 pb-2">Event Details</h3>
                                 <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
                                     <div className="col-span-2">
-                                        <label className="block text-sm font-medium text-gray-300 mb-2">Event Name</label>
+                                        <label className={errors.eventName ? errorLabelClasses : labelClasses}>Event Name</label>
                                         <input
                                             type="text"
                                             name="eventName"
                                             value={data.eventName}
                                             onChange={handleChange}
-                                            className="w-full bg-gray-800/50 border border-gray-600 rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+                                            className={errors.eventName ? errorInputClasses : inputClasses}
                                             placeholder="Enter event name"
                                         />
+                                        {errors.eventName && <p className={errorMessageClasses}>{errors.eventName}</p>}
                                     </div>
 
                                     <div className="col-span-2">
-                                        <label className="block text-sm font-medium text-gray-300 mb-2">Description</label>
+                                        <label className={errors.eventDescription ? errorLabelClasses : labelClasses}>Description</label>
                                         <textarea
                                             name="eventDescription"
                                             value={data.eventDescription}
                                             onChange={handleChange}
                                             rows="4"
-                                            className="w-full bg-gray-800/50 border border-gray-600 rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all resize-none"
+                                            className={`${errors.eventDescription ? errorInputClasses : inputClasses} resize-none`}
                                             placeholder="Describe your event..."
                                         />
+                                        {errors.eventDescription && <p className={errorMessageClasses}>{errors.eventDescription}</p>}
                                     </div>
 
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-300 mb-2">Category</label>
+                                        <label className={errors.eventCategory ? errorLabelClasses : labelClasses}>Category</label>
                                         <select
                                             name="eventCategory"
                                             value={data.eventCategory}
                                             onChange={handleChange}
-                                            className="w-full bg-gray-800/50 border border-gray-600 rounded-lg px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+                                            className={errors.eventCategory ? errorInputClasses : inputClasses}
                                         >
                                             <option value="">Select Category</option>
                                             <option value="Conference">Conference</option>
@@ -176,18 +293,20 @@ const EventEdit = () => {
                                             <option value="Exhibition">Exhibition</option>
                                             <option value="Other">Other</option>
                                         </select>
+                                        {errors.eventCategory && <p className={errorMessageClasses}>{errors.eventCategory}</p>}
                                     </div>
 
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-300 mb-2">Max Attendees</label>
+                                        <label className={errors.maxAttendees ? errorLabelClasses : labelClasses}>Max Attendees</label>
                                         <input
                                             type="number"
                                             name="maxAttendees"
                                             value={data.maxAttendees}
                                             onChange={handleChange}
-                                            className="w-full bg-gray-800/50 border border-gray-600 rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+                                            className={errors.maxAttendees ? errorInputClasses : inputClasses}
                                             placeholder="0"
                                         />
+                                        {errors.maxAttendees && <p className={errorMessageClasses}>{errors.maxAttendees}</p>}
                                     </div>
                                 </div>
                             </div>
@@ -197,49 +316,53 @@ const EventEdit = () => {
                                 <h3 className="text-lg font-medium text-indigo-400 border-b border-gray-700 pb-2">Date & Location</h3>
                                 <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-300 mb-2">Start Date</label>
+                                        <label className={errors.startDate ? errorLabelClasses : labelClasses}>Start Date</label>
                                         <input
                                             type="datetime-local"
                                             name="startDate"
                                             value={data.startDate}
                                             onChange={handleChange}
-                                            className="w-full bg-gray-800/50 border border-gray-600 rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+                                            className={errors.startDate ? errorInputClasses : inputClasses}
                                         />
+                                        {errors.startDate && <p className={errorMessageClasses}>{errors.startDate}</p>}
                                     </div>
 
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-300 mb-2">End Date</label>
+                                        <label className={errors.endDate ? errorLabelClasses : labelClasses}>End Date</label>
                                         <input
                                             type="datetime-local"
                                             name="endDate"
                                             value={data.endDate}
                                             onChange={handleChange}
-                                            className="w-full bg-gray-800/50 border border-gray-600 rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+                                            className={errors.endDate ? errorInputClasses : inputClasses}
                                         />
+                                        {errors.endDate && <p className={errorMessageClasses}>{errors.endDate}</p>}
                                     </div>
 
                                     <div className="col-span-2">
-                                        <label className="block text-sm font-medium text-gray-300 mb-2">Venue Name</label>
+                                        <label className={errors.venueName ? errorLabelClasses : labelClasses}>Venue Name</label>
                                         <input
                                             type="text"
                                             name="venueName"
                                             value={data.venueName}
                                             onChange={handleChange}
-                                            className="w-full bg-gray-800/50 border border-gray-600 rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+                                            className={errors.venueName ? errorInputClasses : inputClasses}
                                             placeholder="e.g. Grand Hall"
                                         />
+                                        {errors.venueName && <p className={errorMessageClasses}>{errors.venueName}</p>}
                                     </div>
 
                                     <div className="col-span-2">
-                                        <label className="block text-sm font-medium text-gray-300 mb-2">Venue Address</label>
+                                        <label className={errors.venueAddress ? errorLabelClasses : labelClasses}>Venue Address</label>
                                         <input
                                             type="text"
                                             name="venueAddress"
                                             value={data.venueAddress}
                                             onChange={handleChange}
-                                            className="w-full bg-gray-800/50 border border-gray-600 rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+                                            className={errors.venueAddress ? errorInputClasses : inputClasses}
                                             placeholder="Full address"
                                         />
+                                        {errors.venueAddress && <p className={errorMessageClasses}>{errors.venueAddress}</p>}
                                     </div>
                                 </div>
                             </div>
@@ -249,53 +372,57 @@ const EventEdit = () => {
                                 <h3 className="text-lg font-medium text-indigo-400 border-b border-gray-700 pb-2">Organizer & Tickets</h3>
                                 <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-300 mb-2">Organizer Name</label>
+                                        <label className={errors.organizerName ? errorLabelClasses : labelClasses}>Organizer Name</label>
                                         <input
                                             type="text"
                                             name="organizerName"
                                             value={data.organizerName}
                                             onChange={handleChange}
-                                            className="w-full bg-gray-800/50 border border-gray-600 rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+                                            className={errors.organizerName ? errorInputClasses : inputClasses}
                                             placeholder="Name"
                                         />
+                                        {errors.organizerName && <p className={errorMessageClasses}>{errors.organizerName}</p>}
                                     </div>
 
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-300 mb-2">Contact Info</label>
+                                        <label className={errors.organizerContact ? errorLabelClasses : labelClasses}>Contact Info</label>
                                         <input
                                             type="text"
                                             name="organizerContact"
                                             value={data.organizerContact}
                                             onChange={handleChange}
-                                            className="w-full bg-gray-800/50 border border-gray-600 rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+                                            className={errors.organizerContact ? errorInputClasses : inputClasses}
                                             placeholder="Email or Phone"
                                         />
+                                        {errors.organizerContact && <p className={errorMessageClasses}>{errors.organizerContact}</p>}
                                     </div>
 
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-300 mb-2">Ticket Price ($)</label>
+                                        <label className={errors.ticketPrice ? errorLabelClasses : labelClasses}>Ticket Price ($)</label>
                                         <input
                                             type="number"
                                             name="ticketPrice"
                                             value={data.ticketPrice}
                                             onChange={handleChange}
-                                            className="w-full bg-gray-800/50 border border-gray-600 rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+                                            className={errors.ticketPrice ? errorInputClasses : inputClasses}
                                             placeholder="0.00"
                                         />
+                                        {errors.ticketPrice && <p className={errorMessageClasses}>{errors.ticketPrice}</p>}
                                     </div>
 
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-300 mb-2">Ticket Type</label>
+                                        <label className={errors.ticketType ? errorLabelClasses : labelClasses}>Ticket Type</label>
                                         <select
                                             name="ticketType"
                                             value={data.ticketType}
                                             onChange={handleChange}
-                                            className="w-full bg-gray-800/50 border border-gray-600 rounded-lg px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+                                            className={errors.ticketType ? errorInputClasses : inputClasses}
                                         >
                                             <option value="Free">Free</option>
                                             <option value="Paid">Paid</option>
                                             <option value="VIP">VIP</option>
                                         </select>
+                                        {errors.ticketType && <p className={errorMessageClasses}>{errors.ticketType}</p>}
                                     </div>
                                 </div>
                             </div>
