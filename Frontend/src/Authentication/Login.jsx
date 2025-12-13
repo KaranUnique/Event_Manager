@@ -4,14 +4,50 @@ import Swal from 'sweetalert2';
 import Background3D from "../Components/Background3D";
 import { useUser } from "../context/UserContext";
 
+// Email Validation Regex
+const validateEmail = (email) => {
+    const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return regex.test(email);
+};
+
+// Password Strength Function
+const checkPasswordStrength = (pass) => {
+    let strength = 0;
+
+    if (pass.length >= 6) strength++;
+    if (/[A-Z]/.test(pass)) strength++;
+    if (/[a-z]/.test(pass)) strength++;
+    if (/[0-9]/.test(pass)) strength++;
+    if (/[^A-Za-z0-9]/.test(pass)) strength++;
+
+    let msg = "";
+    let color = "";
+
+    if (strength <= 2) {
+        msg = "Weak Password";
+        color = "text-red-400";
+    } else if (strength === 3) {
+        msg = "Medium Password";
+        color = "text-yellow-400";
+    } else {
+        msg = "Strong Password";
+        color = "text-green-400";
+    }
+
+    setPasswordStrength({ msg, color });
+};
+
+
 const Login = () => {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
+    const [passwordStrength, setPasswordStrength] = useState({ msg: "", color: "" });
     const [isLoading, setIsLoading] = useState(false);
     const navigate = useNavigate();
     const { login } = useUser();
 
     const loginBtn = async () => {
+        // Empty field check
         if (!email || !password) {
             Swal.fire({
                 icon: 'error',
@@ -23,6 +59,33 @@ const Login = () => {
             });
             return;
         }
+
+        // Email format validation
+        if (!validateEmail(email)) {
+            Swal.fire({
+                icon: "error",
+                title: "Invalid Email",
+                text: "Please enter a valid email address (example@gmail.com).",
+                background: "#1f2937",
+                color: "#fff",
+                confirmButtonColor: "#ef4444",
+            });
+            return;
+        }
+
+        // Basic password strength validation
+        if (password.length < 6) {
+            Swal.fire({
+                icon: "error",
+                title: "Weak Password",
+                text: "Password must be at least 6 characters long.",
+                background: "#1f2937",
+                color: "#fff",
+                confirmButtonColor: "#ef4444",
+            });
+            return;
+        }
+
 
         setIsLoading(true);
 
@@ -125,7 +188,7 @@ const Login = () => {
                                 />
                                 <div id="email-help" className="sr-only">Enter your email address</div>
                             </div>
-                            
+
                             <div className="relative group">
                                 <label htmlFor="password" className="sr-only">
                                     Password
@@ -142,11 +205,20 @@ const Login = () => {
                                     value={password}
                                     autoComplete="current-password"
                                     required
-                                    onChange={(e) => setPassword(e.target.value)}
+                                    onChange={(e) => {
+                                        setPassword(e.target.value);
+                                        checkPasswordStrength(e.target.value);
+                                    }}
+
                                     className="appearance-none rounded-lg block w-full pl-10 px-5 py-4 bg-gray-700/50 border border-gray-600 placeholder-gray-400 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent focus:bg-gray-700 transition-all duration-200 sm:text-lg"
                                     placeholder="Password"
                                     aria-describedby="password-help"
                                 />
+                                <p className={`text-sm mt-1 ${passwordStrength.color}`}>
+                                 {passwordStrength.msg}
+                                </p>
+
+                                
                                 <div id="password-help" className="sr-only">Enter your password</div>
                             </div>
                         </div>

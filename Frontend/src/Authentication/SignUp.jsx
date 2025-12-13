@@ -17,6 +17,37 @@ const SignUp = () => {
     const [isLoading, setIsLoading] = useState(false);
     const navigate = useNavigate();
 
+
+    // Password Strength State
+    const [passwordStrength, setPasswordStrength] = useState({ msg: "", color: "" });
+
+    // Password Strength Checker
+    const checkPasswordStrength = (pass) => {
+        let strength = 0;
+        if (pass.length >= 6) strength++;
+        if (/[A-Z]/.test(pass)) strength++;
+        if (/[a-z]/.test(pass)) strength++;
+        if (/[0-9]/.test(pass)) strength++;
+        if (/[^A-Za-z0-9]/.test(pass)) strength++;
+
+        let msg = "";
+        let color = "";
+
+        if (strength <= 2) {
+            msg = "Weak Password";
+            color = "text-red-400";
+        } else if (strength === 3) {
+            msg = "Medium Password";
+            color = "text-yellow-400";
+        } else {
+            msg = "Strong Password";
+            color = "text-green-400";
+        }
+
+        setPasswordStrength({ msg, color });
+    };
+
+
     const handleSignUp = async () => {
         // Clear previous errors
         setErrors({});
@@ -256,6 +287,10 @@ const SignUp = () => {
 
                             <div className="relative group">
                                 <label htmlFor="confirm-password" className="sr-only">Confirm Password</label>
+                                {formData.cpassword && formData.cpassword !== formData.password && (
+                                    <p className="text-sm mt-1 text-red-400">Passwords do not match</p>
+                                )}
+
                                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                                     <svg className="h-5 w-5 text-gray-400 group-focus-within:text-indigo-500 transition-colors duration-200" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                                         <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
