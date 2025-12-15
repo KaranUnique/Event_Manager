@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { api } from "../Services/api.js";
 import { Link, useNavigate } from "react-router-dom";
 import Swal from 'sweetalert2';
 import {
@@ -84,8 +85,7 @@ const Login = () => {
 
     const loginBtn = async () => {
         if (!validateForm()) {
-        // Empty field check
-        if (!email || !password) {
+            // Show validation errors
             Swal.fire({
                 title: 'Validation Error',
                 html: `
@@ -107,37 +107,11 @@ const Login = () => {
             return;
         }
 
-        // Email format validation
-        if (!validateEmail(email)) {
-            Swal.fire({
-                icon: "error",
-                title: "Invalid Email",
-                text: "Please enter a valid email address (example@gmail.com).",
-                background: "#1f2937",
-                color: "#fff",
-                confirmButtonColor: "#ef4444",
-            });
-            return;
-        }
-
-        // Basic password strength validation
-        if (password.length < 6) {
-            Swal.fire({
-                icon: "error",
-                title: "Weak Password",
-                text: "Password must be at least 6 characters long.",
-                background: "#1f2937",
-                color: "#fff",
-                confirmButtonColor: "#ef4444",
-            });
-            return;
-        }
-
 
         setIsLoading(true);
 
         try {
-            let res = await fetch("http://localhost:7120/user/Login", {
+            let res = await fetch(api.url("/user/Login"), {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ email, password }),
@@ -259,37 +233,6 @@ const Login = () => {
                                         <p className="text-sm text-gray-300">Your data is protected with 256-bit encryption</p>
                                     </div>
                                 </div>
-                            <div className="relative group">
-                                <label htmlFor="password" className="sr-only">
-                                    Password
-                                </label>
-                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                    <svg className="h-5 w-5 text-gray-400 group-focus-within:text-indigo-500 transition-colors duration-200" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                                        <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
-                                    </svg>
-                                </div>
-                                <input
-                                    id="password"
-                                    name="password"
-                                    type="password"
-                                    value={password}
-                                    autoComplete="current-password"
-                                    required
-                                    onChange={(e) => {
-                                        setPassword(e.target.value);
-                                        checkPasswordStrength(e.target.value);
-                                    }}
-
-                                    className="appearance-none rounded-lg block w-full pl-10 px-5 py-4 bg-gray-700/50 border border-gray-600 placeholder-gray-400 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent focus:bg-gray-700 transition-all duration-200 sm:text-lg"
-                                    placeholder="Password"
-                                    aria-describedby="password-help"
-                                />
-                                <p className={`text-sm mt-1 ${passwordStrength.color}`}>
-                                 {passwordStrength.msg}
-                                </p>
-
-                                
-                                <div id="password-help" className="sr-only">Enter your password</div>
                             </div>
                         </div>
                     </div>
@@ -299,42 +242,17 @@ const Login = () => {
                         <div className="text-center mb-8">
                             <div className="flex items-center justify-center gap-3 mb-4">
                                 <div className="p-2 bg-gradient-to-r from-blue-500/20 to-blue-600/20 rounded-xl">
-                                    <LogIn size={24} className="text-blue-400" />
+                                    <LogIn className="text-blue-400" size={24} />
                                 </div>
-                                <h2 className="text-3xl font-bold text-white">Sign In</h2>
+                                <h2 className="text-3xl font-bold bg-gradient-to-r from-blue-400 to-blue-600 bg-clip-text text-transparent">Welcome Back</h2>
                             </div>
-                            <p className="text-gray-400">Enter your credentials to continue</p>
+                            <p className="text-gray-400">Sign in to continue to EventHub</p>
                         </div>
 
-                        {/* Social Login */}
-                        <div className="mb-6">
-                            <p className="text-sm text-gray-400 text-center mb-4">Or continue with</p>
-                            <div className="grid grid-cols-2 gap-3">
-                                {socialProviders.map(provider => (
-                                    <button
-                                        key={provider.name}
-                                        className={`flex items-center justify-center gap-2 p-3 bg-gray-800/30 backdrop-blur-sm rounded-xl border border-gray-700/50 ${provider.color} transition-all duration-300`}
-                                    >
-                                        <span className={provider.text}>{provider.icon}</span>
-                                        <span className="text-sm text-gray-300">{provider.name}</span>
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
-
-                        <div className="relative mb-6">
-                            <div className="absolute inset-0 flex items-center">
-                                <div className="w-full border-t border-gray-700/50"></div>
-                            </div>
-                            <div className="relative flex justify-center text-sm">
-                                <span className="px-4 bg-gradient-to-br from-gray-800/40 to-gray-900/40 text-gray-400">Or use email</span>
-                            </div>
-                        </div>
-
-                        <div className="space-y-6" onKeyPress={handleKeyPress}>
+                        <div className="space-y-6">
                             {/* Email Input */}
                             <div>
-                                <label className=" text-sm font-medium text-gray-300 mb-2 flex items-center gap-2">
+                                <label className="text-sm font-medium text-gray-300 mb-2 flex items-center gap-2">
                                     <Mail size={16} />
                                     Email Address
                                 </label>
@@ -347,7 +265,7 @@ const Login = () => {
                                             setEmail(e.target.value);
                                             if (errors.email) setErrors(prev => ({ ...prev, email: undefined }));
                                         }}
-                                        className={`pl-10 ${errors.email ? errorInputClasses : inputClasses}`}
+                                        className={`pl-10 pr-4 ${errors.email ? errorInputClasses : inputClasses}`}
                                         placeholder="you@example.com"
                                     />
                                 </div>
@@ -451,15 +369,15 @@ const Login = () => {
                                     </Link>
                                 </p>
                             </div>
-                        </div>
 
-                        {/* Mobile Info */}
-                        <div className="lg:hidden mt-8 p-4 bg-gradient-to-r from-blue-500/10 to-green-500/10 rounded-xl border border-blue-500/30">
-                            <div className="flex items-center gap-3">
-                                <Zap size={20} className="text-yellow-400" />
-                                <div>
-                                    <p className="font-semibold text-white">New to EventHub?</p>
-                                    <p className="text-sm text-gray-300">Join thousands of event enthusiasts worldwide</p>
+                            {/* Mobile Info */}
+                            <div className="lg:hidden mt-8 p-4 bg-gradient-to-r from-blue-500/10 to-green-500/10 rounded-xl border border-blue-500/30">
+                                <div className="flex items-center gap-3">
+                                    <Zap size={20} className="text-yellow-400" />
+                                    <div>
+                                        <p className="font-semibold text-white">New to EventHub?</p>
+                                        <p className="text-sm text-gray-300">Join thousands of event enthusiasts worldwide</p>
+                                    </div>
                                 </div>
                             </div>
                         </div>

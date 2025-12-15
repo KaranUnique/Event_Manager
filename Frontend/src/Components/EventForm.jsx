@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { api } from "../Services/api.js";
 import { useNavigate, Link } from 'react-router-dom';
 import Sweet from 'sweetalert2';
 import {
@@ -151,7 +152,8 @@ const EventForm = () => {
                 tags: data.tags ? data.tags.split(',').map(tag => tag.trim()) : []
             };
 
-            const api_url = "http://localhost:7120/event/addEvent";
+            const { api } = await import("../Services/api.js");
+            const api_url = api.url("/event/addEvent");
             const response = await fetch(api_url, {
                 method: "POST",
                 headers: { 'Content-Type': 'application/json' },

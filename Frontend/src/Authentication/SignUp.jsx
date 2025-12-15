@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { api } from "../Services/api.js";
 import { Link, useNavigate } from "react-router-dom";
 import Swal from 'sweetalert2';
 import {
@@ -41,50 +42,6 @@ const SignUp = () => {
         { name: 'GitHub', icon: <Github size={20} />, color: 'hover:bg-gray-800/50 hover:border-gray-600/50', text: 'text-gray-400' },
         { name: 'Twitter', icon: <Twitter size={20} />, color: 'hover:bg-sky-500/10 hover:border-sky-500/30', text: 'text-sky-400' },
     ];
-
-    // Password Strength State
-    const [passwordStrength, setPasswordStrength] = useState({ msg: "", color: "" });
-
-    // Password Strength Checker
-    const checkPasswordStrength = (pass) => {
-        let strength = 0;
-        if (pass.length >= 6) strength++;
-        if (/[A-Z]/.test(pass)) strength++;
-        if (/[a-z]/.test(pass)) strength++;
-        if (/[0-9]/.test(pass)) strength++;
-        if (/[^A-Za-z0-9]/.test(pass)) strength++;
-
-        let msg = "";
-        let color = "";
-
-        if (strength <= 2) {
-            msg = "Weak Password";
-            color = "text-red-400";
-        } else if (strength === 3) {
-            msg = "Medium Password";
-            color = "text-yellow-400";
-        } else {
-            msg = "Strong Password";
-            color = "text-green-400";
-        }
-
-        setPasswordStrength({ msg, color });
-    };
-
-
-    const handleSignUp = async () => {
-        // Validation checks
-        if (!formData.name || !formData.email || !formData.mobile || !formData.password || !formData.cpassword) {
-            Swal.fire({
-                icon: 'error',
-                title: 'Oops...',
-                text: 'Please fill in all fields!',
-                background: '#1f2937',
-                color: '#fff',
-                confirmButtonColor: '#ef4444'
-            });
-            return;
-        }
 
     const benefits = [
         { icon: '🎯', text: 'Personalized event recommendations' },
@@ -159,7 +116,7 @@ const SignUp = () => {
         setIsLoading(true);
 
         try {
-            let res = await fetch("http://localhost:7120/user/Signup", {
+            let res = await fetch(api.url("/user/Signup"), {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
@@ -480,41 +437,10 @@ const SignUp = () => {
                                     >
                                         {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                                     </button>
-                                <input
-                                    id="password"
-                                    name="password"
-                                    type="password"
-                                    value={formData.password}
-                                    autoComplete="new-password"
-                                    required
-                                    onChange={(e) => {
-                                        setFormData({ ...formData, password: e.target.value });
-                                        checkPasswordStrength(e.target.value);
-                                    }}
-                                    className="appearance-none rounded-lg block w-full pl-10 px-5 py-3 bg-gray-700/50 border border-gray-600 placeholder-gray-400 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent focus:bg-gray-700 transition-all duration-200 sm:text-lg"
-                                    placeholder="Password"
-                                    aria-describedby="password-help"
-                                />
-
-                                {/* PLACE PASSWORD STRENGTH BELOW INPUT */}
-                                <p className={`text-sm mt-1 ${passwordStrength.color}`}>
-                                    {passwordStrength.msg}
-                                </p>
-
-                                <div id="password-help" className="sr-only">Enter your password</div>
-                            </div>
-
-                            <div className="relative group">
-                                <label htmlFor="confirm-password" className="sr-only">Confirm Password</label>
+                                </div>
                                 {formData.cpassword && formData.cpassword !== formData.password && (
                                     <p className="text-sm mt-1 text-red-400">Passwords do not match</p>
                                 )}
-
-                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                    <svg className="h-5 w-5 text-gray-400 group-focus-within:text-indigo-500 transition-colors duration-200" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                                        <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
-                                    </svg>
-                                </div>
                                 {errors.cpassword && (
                                     <p className={errorMessageClasses}>
                                         <AlertCircle size={14} />
