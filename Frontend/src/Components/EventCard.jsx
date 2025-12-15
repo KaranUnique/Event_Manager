@@ -1,1210 +1,217 @@
-import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
-import Swal from 'sweetalert2';
-import html2canvas from 'html2canvas';
-import jsPDF from 'jspdf';
-import {
-    Calendar,
-    MapPin,
-    Ticket,
-    Share2,
-    Download,
-    Edit,
-    Trash2,
-    Search,
-    Sparkles,
-    Heart,
-    ArrowRight,
-} from 'lucide-react';
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import Swal from "sweetalert2";
 import html2canvas from "html2canvas";
 import { jsPDF } from "jspdf";
+import {
+  Calendar,
+  MapPin,
+  Ticket,
+  Share2,
+  Download,
+  Edit,
+  Trash2,
+  Search,
+  Heart,
+  ArrowRight,
+  FileText,
+} from "lucide-react";
 
-// -------------------------------
-// Simple Card Component (Reusable)
-// -------------------------------
-const SmallEventCard = ({ event }) => {
-  return (
-    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2">
-      <div className="h-48 overflow-hidden">
-        <img
-          src={event.imageUrl || "https://via.placeholder.com/400x200"}
-          alt={event.eventName}
-          className="w-full h-full object-cover"
-        />
-      </div>
-
-      <div className="p-6">
-        <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
-          {event.eventName}
-        </h3>
-
-        <p className="text-gray-600 dark:text-gray-400 mb-4 line-clamp-2">
-          {event.description || "No description available."}
-        </p>
-
-        <div className="flex items-center justify-between">
-          <span className="text-blue-600 dark:text-blue-400 font-bold">
-            ${event.price ?? "Free"}
-          </span>
-
-          <Link
-            to={`/event/${event._id || event.id}`}
-            className="px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors"
-          >
-            View Details
-          </Link>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-// -------------------------------
-// MAIN EVENT CARD PAGE
-// -------------------------------
 const EventCard = () => {
-    const [data, setData] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [searchQuery, setSearchQuery] = useState('');
-    const [categoryFilter, setCategoryFilter] = useState('all');
-    const [priceFilter, setPriceFilter] = useState('all');
-    const [sortBy, setSortBy] = useState('date');
-    const [favorites, setFavorites] = useState(new Set());
-
-
-    const categories = [
-        'All Categories', 'Technology', 'Music', 'Business',
-        'Arts', 'Sports', 'Workshop', 'Conference', 'Networking'
-    ];
-
-    useEffect(() => {
-        const fetchData = async () => {
-            try {
-                const response = await fetch("http://localhost:7120/event/getEvent");
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-                const result = await response.json();
-                setData(result);
-
-                // Load favorites from localStorage
-                const savedFavorites = localStorage.getItem('eventFavorites');
-                if (savedFavorites) {
-                    setFavorites(new Set(JSON.parse(savedFavorites)));
-                }
-            } catch (error) {
-                console.error("Error fetching events:", error);
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Failed to Load Events',
-                    text: 'Please check your connection and try again.',
-                    background: '#1f2937',
-                    color: '#fff',
-                    confirmButtonColor: '#ef4444',
-                    customClass: { popup: 'rounded-2xl border border-red-500/30' }
-                });
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        fetchData();
-    }, []);
-
-    const handleDeleteEvent = async (eventName) => {
-        const result = await Swal.fire({
-            title: 'Delete Event?',
-            html: `
-                <div class="text-center">
-                    <div class="mb-4 text-5xl">🗑️</div>
-                    <p class="text-white">Are you sure you want to delete this event?</p>
-                    <p class="text-gray-300 text-sm mt-2">This action cannot be undone.</p>
-                </div>
-            `,
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonColor: '#ef4444',
-            cancelButtonColor: '#6b7280',
-            confirmButtonText: 'Yes, delete it',
-            cancelButtonText: 'Cancel',
-            background: '#1f2937',
-            color: '#fff',
-            customClass: {
-                popup: 'rounded-2xl border border-red-500/30'
-            }
-        });
-
-        if (result.isConfirmed) {
-            try {
-                const response = await fetch(`http://localhost:7120/event/deleteEvent/${eventName}`, {
-                    method: 'DELETE',
-                });
-
-                if (response.ok) {
-                    Swal.fire({
-                        title: 'Deleted!',
-                        text: 'Event has been successfully deleted.',
-                        icon: 'success',
-                        background: '#1f2937',
-                        color: '#fff',
-                        confirmButtonColor: '#10b981',
-                        timer: 2000,
-                        showConfirmButton: false,
-                        customClass: { popup: 'rounded-2xl border border-emerald-500/30' }
-                    });
-
-                    const updatedResponse = await fetch("http://localhost:7120/event/getEvent");
-                    if (updatedResponse.ok) {
-                        const updatedResult = await updatedResponse.json();
-                        setData(updatedResult);
-                    }
-                } else {
-                    throw new Error('Failed to delete event');
-                }
-            } catch (error) {
-                console.error("Error deleting event:", error);
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Delete Failed',
-                    text: 'Could not delete the event. Please try again.',
-                    background: '#1f2937',
-                    color: '#fff',
-                    confirmButtonColor: '#ef4444'
-                });
-            }
-        }
-    };
-
-    const handleBookEvent = async (event) => {
-        const result = await Swal.fire({
-            title: 'Book Your Ticket',
-            html: `
-                <div class="text-left space-y-4">
-                    <div class="p-4 bg-gradient-to-r from-blue-500/10 to-green-500/10 rounded-lg">
-                        <h3 class="font-bold text-white mb-2">${event.eventName}</h3>
-                        <div class="text-sm text-gray-300 space-y-1">
-                            <div class="flex items-center gap-2">
-                                <Calendar size={14} />
-                                ${new Date(event.startDate).toLocaleDateString()}
-                            </div>
-                            <div class="flex items-center gap-2">
-                                <MapPin size={14} />
-                                ${event.venueName}
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div>
-                        <label class="block text-sm font-medium text-gray-300 mb-2">Full Name</label>
-                        <input type="text" id="attendee-name" class="swal2-input" placeholder="Enter your name" required>
-                    </div>
-                    
-                    <div>
-                        <label class="block text-sm font-medium text-gray-300 mb-2">Email Address</label>
-                        <input type="email" id="attendee-email" class="swal2-input" placeholder="your@email.com" required>
-                    </div>
-                    
-                    <div>
-                        <label class="block text-sm font-medium text-gray-300 mb-2">Number of Tickets</label>
-                        <input type="number" id="ticket-quantity" class="swal2-input" value="1" min="1" max="10">
-                    </div>
-                </div>
-            `,
-            showCancelButton: true,
-            confirmButtonText: 'Confirm Booking',
-            confirmButtonColor: '#3b82f6',
-            background: '#1f2937',
-            color: '#fff',
-            customClass: {
-                popup: 'rounded-2xl border border-blue-500/30',
-                input: 'bg-gray-800 border-gray-700 text-white'
-            },
-            preConfirm: () => {
-                const name = Swal.getPopup().querySelector('#attendee-name').value;
-                const email = Swal.getPopup().querySelector('#attendee-email').value;
-                const quantity = Swal.getPopup().querySelector('#ticket-quantity').value;
-
-                if (!name || !email) {
-                    Swal.showValidationMessage('Please fill in all required fields');
-                }
-                return { name, email, quantity };
-            }
-        });
-
-        if (result.isConfirmed) {
-            Swal.fire({
-                title: 'Booking Confirmed!',
-                html: `
-                    <div class="text-center">
-                        <div class="mb-4 text-5xl">🎉</div>
-                        <p class="text-white mb-2">Thank you, ${result.value.name}!</p>
-                        <p class="text-gray-300">Your booking for <strong>${event.eventName}</strong> has been confirmed.</p>
-                        <p class="text-sm text-gray-400 mt-4">Confirmation details sent to ${result.value.email}</p>
-                    </div>
-                `,
-                icon: 'success',
-                background: '#1f2937',
-                color: '#fff',
-                confirmButtonColor: '#10b981',
-                customClass: { popup: 'rounded-2xl border border-emerald-500/30' }
-            });
-        }
-    };
-
-    const handleShare = async (event) => {
-        if (navigator.share) {
-            try {
-                await navigator.share({
-                    title: event.eventName,
-                    text: event.eventDescription,
-                    url: window.location.href
-                });
-            } catch (error) {
-                console.error(error)
-                handleCopyToClipboard(event);
-            }
-        } else {
-            handleCopyToClipboard(event);
-        }
-    };
-
-    const handleCopyToClipboard = async (event) => {
-        try {
-            await navigator.clipboard.writeText(`${event.eventName}: ${event.eventDescription} - ${window.location.href}`);
-            Swal.fire({
-                title: 'Copied!',
-                text: 'Event link copied to clipboard',
-                icon: 'success',
-                background: '#1f2937',
-                color: '#fff',
-                confirmButtonColor: '#3b82f6',
-                timer: 2000,
-                showConfirmButton: false,
-                customClass: { popup: 'rounded-2xl border border-blue-500/30' }
-            });
-        } catch (err) {
-            console.error('Failed to copy: ', err);
-        }
-    };
-
-    const handleDownloadImage = async (eventId) => {
-        const element = document.getElementById(`download-card-${eventId}`);
-        if (!element) return;
-
-        try {
-            const canvas = await html2canvas(element, { scale: 2 });
-            const image = canvas.toDataURL('image/png');
-
-            const link = document.createElement('a');
-            link.href = image;
-            link.download = `event-${eventId}.png`;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-
-            Swal.fire({
-                title: 'Image Downloaded!',
-                text: 'Event image saved successfully.',
-                icon: 'success',
-                background: '#1f2937',
-                color: '#fff',
-                timer: 1500,
-                showConfirmButton: false,
-                customClass: { popup: 'rounded-2xl border border-green-500/30' }
-            });
-        } catch (error) {
-            console.error('Error generating image:', error);
-        }
-    };
-
-    const handleDownloadPDF = async (event) => {
-        const element = document.getElementById(`download-card-${event.id || event._id}`);
-        if (!element) return;
-
-        try {
-            const canvas = await html2canvas(element, { scale: 2, backgroundColor: '#0f172a' });
-
-            const imgData = canvas.toDataURL('image/png');
-            const pdf = new jsPDF({
-                orientation: 'landscape',
-                unit: 'px',
-                format: [canvas.width, canvas.height]
-            });
-
-            pdf.addImage(imgData, 'PNG', 0, 0, canvas.width, canvas.height);
-            pdf.save(`event-${event.eventName}.pdf`);
-
-            Swal.fire({
-                title: 'PDF Downloaded!',
-                text: 'Event PDF saved successfully.',
-                icon: 'success',
-                background: '#1f2937',
-                color: '#fff',
-                timer: 1500,
-                showConfirmButton: false,
-                customClass: { popup: 'rounded-2xl border border-green-500/30' }
-            });
-        } catch (error) {
-            console.error('Error generating PDF:', error);
-        }
-    };
-
-    const handleFavorite = (eventId) => {
-        const newFavorites = new Set(favorites);
-        if (newFavorites.has(eventId)) {
-            newFavorites.delete(eventId);
-        } else {
-            newFavorites.add(eventId);
-        }
-        setFavorites(newFavorites);
-        localStorage.setItem('eventFavorites', JSON.stringify([...newFavorites]));
-    };
-
-    // Filter and sort logic
-    const filteredEvents = data.filter(event => {
-        const matchesSearch = event.eventName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            event.eventDescription.toLowerCase().includes(searchQuery.toLowerCase());
-        const matchesCategory = categoryFilter === 'all' || event.eventCategory === categoryFilter;
-        const matchesPrice = priceFilter === 'all' ||
-            (priceFilter === 'free' ? parseFloat(event.ticketPrice) === 0 :
-                priceFilter === 'paid' ? parseFloat(event.ticketPrice) > 0 : true);
-
-        return matchesSearch && matchesCategory && matchesPrice;
-    }).sort((a, b) => {
-        switch (sortBy) {
-            case 'date': return new Date(a.startDate) - new Date(b.startDate);
-            case 'price': return parseFloat(a.ticketPrice) - parseFloat(b.ticketPrice);
-            case 'name': return a.eventName.localeCompare(b.eventName);
-            default: return 0;
-        }
-    });
-
-    if (loading) {
-        return (
-            <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-900 to-black flex flex-col items-center justify-center">
-                <div className="relative">
-                    <div className="w-20 h-20 border-4 border-blue-500/20 border-t-blue-500 rounded-full animate-spin"></div>
-                    <div className="absolute inset-0 flex items-center justify-center">
-                        <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-green-500 rounded-full animate-pulse"></div>
-                    </div>
-                </div>
-                <p className="mt-6 text-gray-400">Loading events...</p>
-            </div>
-        );
-  const [data, setData] = useState([]);
-  const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
-  // Helper: event id accessor
-  const getEventId = (event) => event.id || event._id || event._uuid || event.eventId;
+  const [events, setEvents] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
+  const [favorites, setFavorites] = useState(new Set());
 
+  /* ---------------- FETCH EVENTS ---------------- */
   useEffect(() => {
-    const fetchData = async () => {
+    const fetchEvents = async () => {
       try {
-        const response = await fetch("http://localhost:7120/event/getEvent");
-        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-        const result = await response.json();
-        setData(result || []);
-      } catch (error) {
-        console.error("Error fetching events:", error);
-        await Swal.fire({
-          icon: "error",
-          title: "Oops...",
-          text: "Failed to load events. Please try again later.",
-          background: "#1f2937",
-          color: "#fff",
-          confirmButtonColor: "#ef4444",
-        });
-        setData([]);
+        const res = await fetch("http://localhost:7120/event/getEvent");
+        if (!res.ok) throw new Error("Failed to fetch events");
+        const data = await res.json();
+        setEvents(data || []);
+      } catch (err) {
+        console.error(err);
+        Swal.fire("Error", "Failed to load events", "error");
       } finally {
         setLoading(false);
       }
     };
 
-    fetchData();
+    fetchEvents();
+
+    const fav = localStorage.getItem("eventFavorites");
+    if (fav) setFavorites(new Set(JSON.parse(fav)));
   }, []);
 
-  // -------------------- DELETE EVENT --------------------
-  const handleDeleteEvent = async (eventName) => {
-    const result = await Swal.fire({
-      title: "Are you sure?",
-      text: "You won't be able to revert this!",
+  /* ---------------- HELPERS ---------------- */
+  const getId = (e, i) => e._id || e.id || i;
+
+  const toggleFavorite = (id) => {
+    const copy = new Set(favorites);
+    copy.has(id) ? copy.delete(id) : copy.add(id);
+    setFavorites(copy);
+    localStorage.setItem("eventFavorites", JSON.stringify([...copy]));
+  };
+
+  /* ---------------- ACTIONS ---------------- */
+  const handleDelete = async (name) => {
+    const res = await Swal.fire({
+      title: "Delete Event?",
+      text: "This action cannot be undone",
       icon: "warning",
       showCancelButton: true,
-      confirmButtonColor: "#3085d6",
-      cancelButtonColor: "#d33",
-      confirmButtonText: "Yes, delete it!",
-      background: "#1f2937",
-      color: "#fff",
+      confirmButtonColor: "#ef4444",
     });
 
-    if (!result.isConfirmed) return;
+    if (!res.isConfirmed) return;
 
     try {
-      const response = await fetch(`http://localhost:7120/event/deleteEvent/${encodeURIComponent(eventName)}`, {
+      await fetch(`http://localhost:7120/event/deleteEvent/${encodeURIComponent(name)}`, {
         method: "DELETE",
       });
-
-      if (!response.ok) throw new Error("Failed to delete event");
-
-      await Swal.fire({
-        icon: "success",
-        title: "Deleted!",
-        text: "Your event has been deleted.",
-        background: "#1f2937",
-        color: "#fff",
-        confirmButtonColor: "#4f46e5",
-      });
-
-      // refresh data
-      const updatedResponse = await fetch("http://localhost:7120/event/getEvent");
-      if (updatedResponse.ok) {
-        const updatedResult = await updatedResponse.json();
-        setData(updatedResult || []);
-      }
-    } catch (error) {
-      console.error("Error deleting event:", error);
-      await Swal.fire({
-        icon: "error",
-        title: "Oops...",
-        text: "Failed to delete event. Please try again later.",
-        background: "#1f2937",
-        color: "#fff",
-        confirmButtonColor: "#ef4444",
-      });
-    }
-  };
-
-  // -------------------- BOOK EVENT --------------------
-  const handleBookEvent = async (event) => {
-    const result = await Swal.fire({
-      title: "Book Event",
-      html: `
-        <div class="text-left">
-          <p class="mb-2"><strong>Event:</strong> ${event.eventName}</p>
-          <p class="mb-2"><strong>Date:</strong> ${new Date(event.startDate).toLocaleString()}</p>
-          <p class="mb-2"><strong>Venue:</strong> ${event.venueName}</p>
-          <p class="mb-2"><strong>Price:</strong> $${event.ticketPrice ?? 0}</p>
-          <p class="mb-4"><strong>Type:</strong> ${event.ticketType ?? "General"}</p>
-          <input type="text" id="attendee-name" class="swal2-input" placeholder="Your Name" required>
-          <input type="email" id="attendee-email" class="swal2-input" placeholder="Your Email" required>
-        </div>
-      `,
-      showCancelButton: true,
-      confirmButtonText: "Confirm Booking",
-      confirmButtonColor: "#4f46e5",
-      background: "#1f2937",
-      color: "#fff",
-      focusConfirm: false,
-      preConfirm: () => {
-        const name = Swal.getPopup().querySelector("#attendee-name").value;
-        const email = Swal.getPopup().querySelector("#attendee-email").value;
-        if (!name || !email) Swal.showValidationMessage("Please enter both name and email");
-        return { name, email };
-      },
-    });
-
-    if (result.isConfirmed) {
-      await Swal.fire({
-        icon: "success",
-        title: "Booking Confirmed!",
-        html: `
-          <p class="mb-2">Thank you, ${result.value.name}!</p>
-          <p>Your booking for <strong>${event.eventName}</strong> is confirmed.</p>
-          <p class="mt-2">A confirmation email has been sent to ${result.value.email}</p>
-        `,
-        background: "#1f2937",
-        color: "#fff",
-        confirmButtonColor: "#4f46e5",
-      });
-      // If you want to persist booking by calling API, do so here.
-    }
-  };
-
-  // -------------------- SHARE EVENT --------------------
-  const handleCopyToClipboard = async (event) => {
-    try {
-      await navigator.clipboard.writeText(`${event.eventName}: ${event.eventDescription || ""} - ${window.location.href}`);
-      await Swal.fire({
-        icon: "success",
-        title: "Copied!",
-        text: "Event link copied to clipboard",
-        background: "#1f2937",
-        color: "#fff",
-        confirmButtonColor: "#4f46e5",
-        timer: 1500,
-        timerProgressBar: true,
-      });
-    } catch (err) {
-      console.error("Failed to copy: ", err);
-      await Swal.fire({
-        icon: "error",
-        title: "Oops...",
-        text: "Failed to copy link. Please try again.",
-        background: "#1f2937",
-        color: "#fff",
-        confirmButtonColor: "#ef4444",
-      });
+      setEvents((prev) => prev.filter((e) => e.eventName !== name));
+      Swal.fire("Deleted", "Event removed successfully", "success");
+    } catch {
+      Swal.fire("Error", "Failed to delete event", "error");
     }
   };
 
   const handleShare = async (event) => {
+    const url = `${window.location.origin}/event/${event._id}`;
     if (navigator.share) {
       try {
-        await navigator.share({
-          title: event.eventName,
-          text: `Check out this event: ${event.eventDescription || ""}`,
-          url: window.location.href,
-        });
+        await navigator.share({ title: event.eventName, url });
         return;
-      } catch (error) {
-        console.log("Native share failed:", error);
-      }
+      } catch {}
     }
-    await handleCopyToClipboard(event);
+    await navigator.clipboard.writeText(url);
+    Swal.fire("Copied", "Event link copied", "success");
   };
 
-  // -------------------- DOWNLOAD IMAGE --------------------
-  const handleDownloadImage = async (eventId) => {
-    const element = document.getElementById(`download-card-${eventId}`);
-    if (!element) {
-      await Swal.fire({
-        icon: "error",
-        title: "Oops...",
-        text: "Could not find event card for download",
-        background: "#1f2937",
-        color: "#fff",
-        confirmButtonColor: "#ef4444",
-      });
-      return;
-    }
-
-    try {
-      const canvas = await html2canvas(element, { backgroundColor: null, scale: 2 });
-      const image = canvas.toDataURL("image/png");
-      const link = document.createElement("a");
-      link.href = image;
-      link.download = `event-${eventId}.png`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-    } catch (error) {
-      console.error("Error generating image:", error);
-      await Swal.fire({
-        icon: "error",
-        title: "Oops...",
-        text: "Failed to download image. Please try again later.",
-        background: "#1f2937",
-        color: "#fff",
-        confirmButtonColor: "#ef4444",
-      });
-    }
+  const handleDownloadPNG = async (id) => {
+    const el = document.getElementById(`card-${id}`);
+    if (!el) return;
+    const canvas = await html2canvas(el, { scale: 2 });
+    const link = document.createElement("a");
+    link.href = canvas.toDataURL("image/png");
+    link.download = `event-${id}.png`;
+    link.click();
   };
 
-  // -------------------- DOWNLOAD PDF --------------------
-  const handleDownloadPDF = async (event) => {
-    const element = document.getElementById(`download-card-${getEventId(event)}`);
-    if (!element) {
-      await Swal.fire({
-        icon: "error",
-        title: "Oops...",
-        text: "Could not find event card for download",
-        background: "#1f2937",
-        color: "#fff",
-        confirmButtonColor: "#ef4444",
-      });
-      return;
-    }
-
-    try {
-      const canvas = await html2canvas(element, { backgroundColor: "#0f172a", scale: 2 });
-      const imgData = canvas.toDataURL("image/png");
-      const pdf = new jsPDF({
-        orientation: "landscape",
-        unit: "px",
-        format: [canvas.width, canvas.height],
-      });
-      pdf.addImage(imgData, "PNG", 0, 0, canvas.width, canvas.height);
-      pdf.save(`event-${(event.eventName || "ticket").replace(/\s+/g, "-")}.pdf`);
-    } catch (error) {
-      console.error("Error generating PDF:", error);
-      await Swal.fire({
-        icon: "error",
-        title: "Oops...",
-        text: "Failed to download PDF. Please try again later.",
-        background: "#1f2937",
-        color: "#fff",
-        confirmButtonColor: "#ef4444",
-      });
-    }
+  const handleDownloadPDF = async (event, id) => {
+    const el = document.getElementById(`card-${id}`);
+    if (!el) return;
+    const canvas = await html2canvas(el, { scale: 2 });
+    const pdf = new jsPDF("landscape", "px", [canvas.width, canvas.height]);
+    pdf.addImage(canvas.toDataURL("image/png"), "PNG", 0, 0);
+    pdf.save(`${event.eventName}.pdf`);
   };
 
+  /* ---------------- FILTER ---------------- */
+  const filtered = events.filter(
+    (e) =>
+      e.eventName?.toLowerCase().includes(search.toLowerCase()) ||
+      e.eventDescription?.toLowerCase().includes(search.toLowerCase())
+  );
+
+  /* ---------------- LOADING ---------------- */
   if (loading) {
     return (
-        <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-900 to-black text-white overflow-hidden">
-            {/* Animated Background */}
-            <div className="absolute inset-0 overflow-hidden">
-                <div className="absolute -top-40 -right-40 w-80 h-80 bg-blue-500/10 rounded-full blur-3xl"></div>
-                <div className="absolute top-1/2 -left-20 w-80 h-80 bg-green-500/10 rounded-full blur-3xl"></div>
-                <div className="absolute bottom-20 right-1/4 w-60 h-60 bg-yellow-500/10 rounded-full blur-3xl"></div>
-            </div>
-
-            <div className="relative z-10 pt-24 pb-12 px-4 sm:px-6 lg:px-8">
-                <div className="max-w-7xl mx-auto">
-                    {/* Header */}
-                    <div className="text-center mb-12">
-                        <div className="inline-flex items-center gap-2 bg-gradient-to-r from-blue-500/20 to-green-500/20 px-4 py-2 rounded-full mb-6">
-                            <Sparkles size={16} className="text-yellow-400" />
-                            <span className="text-sm font-medium bg-gradient-to-r from-blue-400 to-green-400 bg-clip-text text-transparent">
-                                Discover Experiences
-                            </span>
-                        </div>
-
-                        <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold mb-4">
-                            <span className="block bg-gradient-to-r from-blue-400 via-green-400 to-yellow-400 bg-clip-text text-transparent">
-                                All Events
-                            </span>
-                        </h1>
-                        <p className="text-gray-400 text-lg sm:text-xl max-w-2xl mx-auto">
-                            Find your next unforgettable experience from our curated collection
-                        </p>
-                    </div>
-
-                    {/* Stats Bar */}
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-                        <div className="bg-gradient-to-br from-blue-500/20 to-blue-600/20 backdrop-blur-sm rounded-xl p-4 border border-blue-500/30">
-                            <div className="text-2xl font-bold text-white mb-1">{data.length}</div>
-                            <div className="text-sm text-gray-300">Total Events</div>
-                        </div>
-                        <div className="bg-gradient-to-br from-green-500/20 to-green-600/20 backdrop-blur-sm rounded-xl p-4 border border-green-500/30">
-                            <div className="text-2xl font-bold text-white mb-1">
-                                {data.filter(e => new Date(e.startDate) > new Date()).length}
-                            </div>
-                            <div className="text-sm text-gray-300">Upcoming</div>
-                        </div>
-                        <div className="bg-gradient-to-br from-yellow-500/20 to-yellow-600/20 backdrop-blur-sm rounded-xl p-4 border border-yellow-500/30">
-                            <div className="text-2xl font-bold text-white mb-1">
-                                {data.filter(e => parseFloat(e.ticketPrice) === 0).length}
-                            </div>
-                            <div className="text-sm text-gray-300">Free Events</div>
-                        </div>
-                        <div className="bg-gradient-to-br from-purple-500/20 to-purple-600/20 backdrop-blur-sm rounded-xl p-4 border border-purple-500/30">
-                            <div className="text-2xl font-bold text-white mb-1">
-                                {new Set(data.map(e => e.eventCategory)).size}
-                            </div>
-                            <div className="text-sm text-gray-300">Categories</div>
-                        </div>
-                    </div>
-
-                    {/* Filters and Search */}
-                    <div className="bg-gradient-to-br from-gray-800/40 to-gray-900/40 backdrop-blur-xl rounded-2xl p-6 mb-8 border border-gray-700/50">
-                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                            <div className="relative">
-                                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
-                                <input
-                                    type="text"
-                                    placeholder="Search events..."
-                                    value={searchQuery}
-                                    onChange={(e) => setSearchQuery(e.target.value)}
-                                    className="w-full pl-10 pr-4 py-3 bg-gray-800/50 backdrop-blur-sm border border-gray-700/50 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500/50"
-                                />
-                            </div>
-
-                            <div>
-                                <select
-                                    value={categoryFilter}
-                                    onChange={(e) => setCategoryFilter(e.target.value)}
-                                    className="w-full px-4 py-3 bg-gray-800/50 backdrop-blur-sm border border-gray-700/50 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500/50"
-                                >
-                                    {categories.map(cat => (
-                                        <option key={cat} value={cat === 'All Categories' ? 'all' : cat}>{cat}</option>
-                                    ))}
-                                </select>
-                            </div>
-
-                            <div>
-                                <select
-                                    value={priceFilter}
-                                    onChange={(e) => setPriceFilter(e.target.value)}
-                                    className="w-full px-4 py-3 bg-gray-800/50 backdrop-blur-sm border border-gray-700/50 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500/50"
-                                >
-                                    <option value="all">All Prices</option>
-                                    <option value="free">Free Only</option>
-                                    <option value="paid">Paid Events</option>
-                                    <option value="premium">Premium ($100+)</option>
-                                </select>
-                            </div>
-
-                            <div>
-                                <select
-                                    value={sortBy}
-                                    onChange={(e) => setSortBy(e.target.value)}
-                                    className="w-full px-4 py-3 bg-gray-800/50 backdrop-blur-sm border border-gray-700/50 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500/50"
-                                >
-                                    <option value="date">Sort by Date</option>
-                                    <option value="price">Sort by Price</option>
-                                    <option value="name">Sort by Name</option>
-                                </select>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Events Grid */}
-                    {filteredEvents.length === 0 ? (
-                        <div className="text-center py-20 bg-gradient-to-br from-gray-800/40 to-gray-900/40 backdrop-blur-xl rounded-3xl border border-gray-700/50">
-                            <div className="inline-flex p-4 bg-gradient-to-br from-blue-500/10 to-green-500/10 rounded-2xl mb-6">
-                                <Search size={48} className="text-gray-400" />
-                            </div>
-                            <h3 className="text-2xl font-bold text-white mb-2">No Events Found</h3>
-                            <p className="text-gray-400 mb-8 max-w-md mx-auto">
-                                {searchQuery ? `No events matching "${searchQuery}"` : 'No events available at the moment'}
-                            </p>
-                            <Link
-                                to="/eventForm"
-                                className="group inline-flex items-center gap-3 px-8 py-4 bg-gradient-to-r from-blue-600 to-green-600 text-white font-bold rounded-2xl hover:from-blue-700 hover:to-green-700 transition-all duration-300 hover:scale-105 shadow-lg"
-                            >
-                                <span>Create Your First Event</span>
-                                <ArrowRight size={20} className="group-hover:translate-x-2 transition-transform" />
-                            </Link>
-                        </div>
-                    ) : (
-                        <div className="grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
-                            {filteredEvents.map((event, index) => {
-                                const eventId = event.id || event._id || index;
-                                const isUpcoming = new Date(event.startDate) > new Date();
-                                const isFavorite = favorites.has(eventId);
-
-                                return (
-                                    <div key={eventId} className="relative group">
-                                        {/* Hidden Download Card */}
-                                        <div className="fixed left-[-9999px] top-0 pointer-events-none">
-                                            <div id={`download-card-${eventId}`} className="w-[800px] h-[400px] bg-gradient-to-br from-gray-900 to-black text-white relative overflow-hidden rounded-2xl p-8">
-                                                <div className="absolute inset-0 bg-gradient-to-r from-blue-500/5 via-green-500/5 to-transparent"></div>
-                                                <div className="relative z-10">
-                                                    <h2 className="text-4xl font-bold mb-4">{event.eventName}</h2>
-                                                    <p className="text-gray-300 text-lg mb-6">{event.eventDescription}</p>
-                                                    <div className="grid grid-cols-2 gap-4">
-                                                        <div className="space-y-2">
-                                                            <p className="text-sm text-gray-400">📅 Date</p>
-                                                            <p className="text-white font-medium">{new Date(event.startDate).toLocaleDateString()}</p>
-                                                        </div>
-                                                        <div className="space-y-2">
-                                                            <p className="text-sm text-gray-400">📍 Location</p>
-                                                            <p className="text-white font-medium">{event.venueName}</p>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        {/* Visible Card */}
-                                        <div className="bg-gradient-to-br from-gray-800/40 to-gray-900/40 backdrop-blur-xl rounded-3xl border border-gray-700/50 overflow-hidden hover:border-blue-500/50 transition-all duration-300 hover:shadow-2xl hover:shadow-blue-500/10 h-full flex flex-col">
-                                            {/* Card Header */}
-                                            <div className="relative h-48 bg-gradient-to-br from-blue-600/30 via-green-600/20 to-transparent overflow-hidden">
-                                                <div className="absolute inset-0 bg-gradient-to-t from-gray-900 via-gray-900/80 to-transparent z-10"></div>
-                                                <div className="absolute top-4 right-4 z-20">
-                                                    <button
-                                                        onClick={() => handleFavorite(eventId)}
-                                                        className="p-2 bg-gray-900/80 backdrop-blur-sm rounded-full border border-gray-700/50 hover:border-red-500/50 transition-colors"
-                                                    >
-                                                        <Heart size={20} className={isFavorite ? "fill-red-500 text-red-500" : "text-gray-400"} />
-                                                    </button>
-                                                </div>
-                                                <div className="absolute bottom-0 left-0 right-0 p-6 z-20">
-                                                    <div className="flex items-center gap-3 mb-2">
-                                                        <span className="px-3 py-1 text-xs font-bold bg-gradient-to-r from-blue-500/20 to-blue-600/20 backdrop-blur-sm rounded-full border border-blue-500/30">
-                                                            {event.eventCategory}
-                                                        </span>
-                                                        {!isUpcoming && (
-                                                            <span className="px-3 py-1 text-xs font-bold bg-gradient-to-r from-gray-500/20 to-gray-600/20 backdrop-blur-sm rounded-full border border-gray-500/30">
-                                                                Past Event
-                                                            </span>
-                                                        )}
-                                                    </div>
-                                                    <h3 className="text-xl font-bold text-white line-clamp-1">{event.eventName}</h3>
-                                                </div>
-                                            </div>
-
-                                            {/* Card Content */}
-                                            <div className="p-6 flex-grow">
-                                                <p className="text-gray-400 text-sm line-clamp-3 mb-6">
-                                                    {event.eventDescription}
-                                                </p>
-
-                                                <div className="space-y-4">
-                                                    <div className="flex items-center gap-3">
-                                                        <div className="p-2 bg-blue-500/10 rounded-lg">
-                                                            <Calendar size={18} className="text-blue-400" />
-                                                        </div>
-                                                        <div>
-                                                            <p className="text-sm text-gray-400">Date & Time</p>
-                                                            <p className="text-white font-medium">
-                                                                {new Date(event.startDate).toLocaleDateString('en-US', {
-                                                                    weekday: 'short',
-                                                                    month: 'short',
-                                                                    day: 'numeric'
-                                                                })}
-                                                            </p>
-                                                            <p className="text-sm text-gray-300">
-                                                                {new Date(event.startDate).toLocaleTimeString([], {
-                                                                    hour: '2-digit',
-                                                                    minute: '2-digit'
-                                                                })}
-                                                            </p>
-                                                        </div>
-                                                    </div>
-
-                                                    <div className="flex items-center gap-3">
-                                                        <div className="p-2 bg-green-500/10 rounded-lg">
-                                                            <MapPin size={18} className="text-green-400" />
-                                                        </div>
-                                                        <div>
-                                                            <p className="text-sm text-gray-400">Venue</p>
-                                                            <p className="text-white font-medium line-clamp-1">{event.venueName}</p>
-                                                            <p className="text-sm text-gray-300 line-clamp-1">{event.venueAddress}</p>
-                                                        </div>
-                                                    </div>
-
-                                                    <div className="flex items-center justify-between p-4 bg-gray-800/30 rounded-xl">
-                                                        <div>
-                                                            <p className="text-sm text-gray-400">Ticket Price</p>
-                                                            <p className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-green-400 bg-clip-text text-transparent">
-                                                                ${event.ticketPrice}
-                                                            </p>
-                                                        </div>
-                                                        <div>
-                                                            <p className="text-sm text-gray-400">Type</p>
-                                                            <p className="text-white font-medium">{event.ticketType}</p>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-
-                                            {/* Card Actions */}
-                                            <div className="p-6 pt-0 mt-auto">
-                                                <div className="grid grid-cols-5 gap-2 mb-4">
-                                                    <button
-                                                        onClick={() => handleShare(event)}
-                                                        className="group/action p-2 bg-gray-800/50 backdrop-blur-sm rounded-lg hover:bg-gray-800/80 transition-colors border border-gray-700/50 hover:border-blue-500/50"
-                                                        title="Share"
-                                                    >
-                                                        <Share2 size={18} className="text-gray-400 group-hover/action:text-blue-400 mx-auto" />
-                                                    </button>
-                                                    <button
-                                                        onClick={() => handleDownloadImage(eventId)}
-                                                        className="group/action p-2 bg-gray-800/50 backdrop-blur-sm rounded-lg hover:bg-gray-800/80 transition-colors border border-gray-700/50 hover:border-green-500/50"
-                                                        title="Download Image"
-                                                    >
-                                                        <Download size={18} className="text-gray-400 group-hover/action:text-green-400 mx-auto" />
-                                                    </button>
-                                                    <button
-                                                        onClick={() => handleDownloadPDF(event)}
-                                                        className="group/action p-2 bg-gray-800/50 backdrop-blur-sm rounded-lg hover:bg-gray-800/80 transition-colors border border-gray-700/50 hover:border-yellow-500/50"
-                                                        title="Download PDF"
-                                                    >
-                                                        <FileText size={18} className="text-gray-400 group-hover/action:text-yellow-400 mx-auto" />
-                                                    </button>
-                                                    <Link
-                                                        to={`/eventEdit/${event.eventName}`}
-                                                        className="group/action p-2 bg-gray-800/50 backdrop-blur-sm rounded-lg hover:bg-gray-800/80 transition-colors border border-gray-700/50 hover:border-purple-500/50 flex items-center justify-center"
-                                                        title="Edit"
-                                                    >
-                                                        <Edit size={18} className="text-gray-400 group-hover/action:text-purple-400" />
-                                                    </Link>
-                                                    <button
-                                                        onClick={() => handleDeleteEvent(event.eventName)}
-                                                        className="group/action p-2 bg-gray-800/50 backdrop-blur-sm rounded-lg hover:bg-gray-800/80 transition-colors border border-gray-700/50 hover:border-red-500/50"
-                                                        title="Delete"
-                                                    >
-                                                        <Trash2 size={18} className="text-gray-400 group-hover/action:text-red-400 mx-auto" />
-                                                    </button>
-                                                </div>
-
-                                                <button
-                                                    onClick={() => handleBookEvent(event)}
-                                                    disabled={!isUpcoming}
-                                                    className={`w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl font-bold transition-all duration-300 ${isUpcoming
-                                                        ? 'bg-gradient-to-r from-blue-600 to-green-600 text-white hover:opacity-90 shadow-lg hover:shadow-blue-500/30'
-                                                        : 'bg-gray-800/50 text-gray-400 cursor-not-allowed'
-                                                        }`}
-                                                >
-                                                    <Ticket size={20} />
-                                                    {isUpcoming ? 'Book Now' : 'Event Ended'}
-                                                    {isUpcoming && <ArrowRight size={18} className="ml-auto" />}
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                );
-                            })}
-                        </div>
-                    )}
-
-                    {/* Create Event CTA */}
-                    <div className="mt-12 text-center">
-                        <Link
-                            to="/eventForm"
-                            className="group inline-flex items-center gap-3 px-8 py-4 bg-gradient-to-r from-blue-600 via-green-600 to-yellow-500 text-white font-bold rounded-2xl hover:opacity-90 transition-all duration-300 hover:scale-105 shadow-lg"
-                        >
-                            <span>Host Your Own Event</span>
-                            <ArrowRight size={20} className="group-hover:translate-x-2 transition-transform" />
-                        </Link>
-                    </div>
-                </div>
-            </div>
-        </div>
-    );
-};
-
-export default EventCard;
-
-// Add missing icon component
-const FileText = (props) => (
-    <svg {...props} xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path>
-        <polyline points="14 2 14 8 20 8"></polyline>
-        <line x1="16" y1="13" x2="8" y2="13"></line>
-        <line x1="16" y1="17" x2="8" y2="17"></line>
-        <line x1="10" y1="9" x2="8" y2="9"></line>
-    </svg>
-);
-      <div className="min-h-screen flex justify-center items-center">
-        <div className="animate-spin h-12 w-12 border-t-2 border-b-2 border-indigo-500 rounded-full"></div>
+      <div className="min-h-screen flex items-center justify-center bg-black text-white">
+        Loading events...
       </div>
     );
   }
 
-  // -------------------- MAIN UI --------------------
+  /* ---------------- UI ---------------- */
   return (
-    <div className="min-h-screen pt-20 pb-12 px-4">
-      <div className="max-w-7xl mx-auto">
-        <h1 className="text-center text-4xl font-bold text-indigo-300 mb-10">Discover Events</h1>
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 to-black text-white p-6">
+      {/* Search */}
+      <div className="max-w-7xl mx-auto mb-6 relative">
+        <Search className="absolute left-3 top-3 text-gray-400" />
+        <input
+          className="w-full pl-10 py-3 rounded-xl bg-gray-800 border border-gray-700"
+          placeholder="Search events..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
+      </div>
 
-        {data.length === 0 ? (
-          <div className="text-center py-20 bg-gray-900/60 backdrop-blur-md rounded-2xl border border-gray-700/50">
-            <div className="text-6xl mb-4">📅</div>
-            <h3 className="text-2xl font-bold text-white mb-2">No Events Found</h3>
-            <p className="text-gray-400 mb-8">Be the first to create an event!</p>
-            <Link
-              to="/eventForm"
-              className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 transition-colors shadow-lg hover:shadow-indigo-500/30 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-gray-900"
+      {/* Grid */}
+      <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {filtered.map((event, i) => {
+          const id = getId(event, i);
+          const upcoming = new Date(event.startDate) > new Date();
+
+          return (
+            <div
+              key={id}
+              id={`card-${id}`}
+              className="bg-gray-800/60 rounded-2xl border border-gray-700 overflow-hidden flex flex-col"
             >
-              Create Event
-            </Link>
-          </div>
-        ) : (
-          <div className="grid gap-8 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
-            {data.map((event, index) => {
-              const id = getEventId(event) ?? index;
-              return (
-                <div key={id} className="relative" role="article" aria-labelledby={`event-title-${id}`}>
-                  {/* Hidden high-quality downloadable card for image/pdf */}
-                  <div className="fixed left-[-9999px] top-0 pointer-events-none">
-                    <div
-                      id={`download-card-${id}`}
-                      className="w-[800px] h-[400px] bg-slate-900 text-white relative overflow-hidden rounded-xl flex shadow-2xl border border-white/10"
-                    >
-                      {/* Background & Overlays */}
-                      <div
-                        className="absolute inset-0 opacity-30"
-                        style={{
-                          backgroundImage: `radial-gradient(circle at 10% 20%, rgba(255, 192, 203, 0.1) 0%, transparent 20%), radial-gradient(circle at 90% 80%, rgba(221, 160, 221, 0.1) 0%, transparent 20%)`,
-                          backgroundSize: "100% 100%",
-                        }}
-                      />
-                      <div className="absolute top-0 left-0 w-64 h-64 text-pink-300/20 pointer-events-none">
-                        <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" className="w-full h-full">
-                          <path
-                            fill="currentColor"
-                            d="M45.7,-76.3C58.9,-69.3,69.1,-55.6,76.3,-41.2C83.5,-26.8,87.7,-11.7,85.6,2.4C83.5,16.5,75.1,29.6,65.3,40.8C55.5,52,44.3,61.3,31.8,68.1C19.3,74.9,5.5,79.2,-7.1,77.4C-19.7,75.6,-31.1,67.7,-42.1,59.1C-53.1,50.5,-63.7,41.2,-71.2,29.6C-78.7,18,-83.1,4.1,-80.8,-8.8C-78.5,-21.7,-69.5,-33.6,-58.9,-42.7C-48.3,-51.8,-36.1,-58.1,-23.9,-65.7C-11.7,-73.3,0.5,-82.2,14.5,-84.8C28.5,-87.4,44.3,-83.7,45.7,-76.3Z"
-                            transform="translate(100 100) scale(1.1)"
-                          />
-                        </svg>
-                      </div>
-                      <div className="absolute bottom-0 right-0 w-64 h-64 text-purple-300/20 pointer-events-none rotate-180">
-                        <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" className="w-full h-full">
-                          <path
-                            fill="currentColor"
-                            d="M45.7,-76.3C58.9,-69.3,69.1,-55.6,76.3,-41.2C83.5,-26.8,87.7,-11.7,85.6,2.4C83.5,16.5,75.1,29.6,65.3,40.8C55.5,52,44.3,61.3,31.8,68.1C19.3,74.9,5.5,79.2,-7.1,77.4C-19.7,75.6,-31.1,67.7,-42.1,59.1C-53.1,50.5,-63.7,41.2,-71.2,29.6C-78.7,18,-83.1,4.1,-80.8,-8.8C-78.5,-21.7,-69.5,-33.6,-58.9,-42.7C-48.3,-51.8,-36.1,-58.1,-23.9,-65.7C-11.7,-73.3,0.5,-82.2,14.5,-84.8C28.5,-87.4,44.3,-83.7,45.7,-76.3Z"
-                            transform="translate(100 100) scale(1.1)"
-                          />
-                        </svg>
-                      </div>
-
-                      <div className="relative z-10 p-12 flex flex-col justify-between w-full">
-                        <div>
-                          <div className="flex justify-between items-start mb-6">
-                            <div>
-                              <span className="inline-block px-3 py-1 text-xs font-semibold text-pink-300 bg-pink-900/30 rounded-full mb-2">
-                                {event.eventCategory}
-                              </span>
-                              <h2 id={`event-title-${id}`} className="text-4xl font-bold text-white mb-2">
-                                {event.eventName}
-                              </h2>
-                            </div>
-                            <div className="text-right">
-                              <div className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-pink-400 to-purple-400">
-                                ${event.ticketPrice ?? 0}
-                              </div>
-                              <div className="text-sm text-gray-300">{event.ticketType}</div>
-                            </div>
-                          </div>
-
-                          <p className="text-gray-300 text-lg leading-relaxed mb-6">{event.eventDescription}</p>
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-6">
-                          <div>
-                            <div className="text-sm text-gray-400 mb-1">📅 Date & Time</div>
-                            <div className="text-white font-medium">
-                              {event.startDate ? `${new Date(event.startDate).toLocaleDateString()} at ${new Date(event.startDate).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}` : "TBA"}
-                            </div>
-                          </div>
-                          <div>
-                            <div className="text-sm text-gray-400 mb-1">📍 Location</div>
-                            <div className="text-white font-medium truncate">{event.venueName}</div>
-                          </div>
-                          <div>
-                            <div className="text-sm text-gray-400 mb-1">👤 Organizer</div>
-                            <div className="text-white font-medium">{event.organizerName}</div>
-                          </div>
-                          <div>
-                            <div className="text-sm text-gray-400 mb-1">👥 Capacity</div>
-                            <div className="text-white font-medium">{event.maxAttendees ?? "—"} people</div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Visible Card */}
-                  <div className="bg-gray-900/60 backdrop-blur-md rounded-2xl border border-gray-700/50 shadow-xl overflow-hidden h-full flex flex-col transition-transform duration-300 hover:scale-[1.02] hover:shadow-2xl">
-                    <div className="bg-gradient-to-r from-indigo-900/50 to-purple-900/50 p-6">
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <span className="inline-block px-3 py-1 text-xs font-semibold text-indigo-300 bg-indigo-900/30 rounded-full mb-2">
-                            {event.eventCategory}
-                          </span>
-                          <h3 id={`event-title-${id}`} className="text-xl font-bold text-white">
-                            {event.eventName}
-                          </h3>
-                        </div>
-                        <div className="text-right">
-                          <div className="text-lg font-bold text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-purple-400">
-                            ${event.ticketPrice ?? 0}
-                          </div>
-                          <div className="text-xs text-gray-400">{event.ticketType}</div>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="p-6 flex-grow">
-                      <p className="text-gray-400 mb-6 line-clamp-3">{event.eventDescription}</p>
-
-                      <div className="space-y-3 mb-6">
-                        <div className="flex items-center text-gray-300">
-                          <svg className="w-5 h-5 mr-3 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
-                          </svg>
-                          <span>
-                            {event.startDate ? `${new Date(event.startDate).toLocaleDateString()} at ${new Date(event.startDate).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}` : "TBA"}
-                          </span>
-                        </div>
-
-                        <div className="flex items-center text-gray-300">
-                          <svg className="w-5 h-5 mr-3 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                          </svg>
-                          <span className="truncate">{event.venueName}</span>
-                        </div>
-
-                        <div className="flex items-center text-gray-300">
-                          <svg className="w-5 h-5 mr-3 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
-                          </svg>
-                          <span>{event.organizerName}</span>
-                        </div>
-
-                        <div className="flex items-center text-gray-300">
-                          <svg className="w-5 h-5 mr-3 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
-                          </svg>
-                          <span>{event.maxAttendees ?? "—"} attendees max</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="p-6 pt-0 mt-auto space-y-3">
-                      <button
-                        onClick={() => handleBookEvent(event)}
-                        className="w-full flex items-center justify-center px-4 py-3 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white text-base font-bold rounded-xl transition-all shadow-lg hover:shadow-emerald-500/30 transform hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 focus:ring-offset-gray-900"
-                        aria-label={`Book ticket for ${event.eventName}`}
-                      >
-                        <span className="mr-2" aria-hidden="true">
-                          🎟️
-                        </span>
-                        Book Ticket
-                      </button>
-
-                      <div className="grid grid-cols-4 gap-2">
-                        <button
-                          onClick={() => handleShare(event)}
-                          title="Share Event"
-                          className="flex items-center justify-center px-2 py-2 bg-gray-800 hover:bg-gray-700 text-white text-sm font-medium rounded-lg transition-colors border border-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 focus:ring-offset-gray-900"
-                        >
-                          <span aria-hidden="true">🔗</span>
-                          <span className="sr-only">Share event</span>
-                        </button>
-
-                        <button
-                          onClick={() => handleDownloadImage(id)}
-                          title="Download as PNG"
-                          className="flex items-center justify-center px-2 py-2 bg-gray-800 hover:bg-gray-700 text-white text-sm font-medium rounded-lg transition-colors border border-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 focus:ring-offset-gray-900"
-                        >
-                          <span aria-hidden="true">🖼️</span>
-                          <span className="sr-only">Download as image</span>
-                        </button>
-
-                        <button
-                          onClick={() => handleDownloadPDF(event)}
-                          title="Download as PDF"
-                          className="flex items-center justify-center px-2 py-2 bg-gray-800 hover:bg-gray-700 text-white text-sm font-medium rounded-lg transition-colors border border-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 focus:ring-offset-gray-900"
-                        >
-                          <span aria-hidden="true">📄</span>
-                          <span className="sr-only">Download as PDF</span>
-                        </button>
-
-                        <Link
-                          to={`/eventEdit/${encodeURIComponent(event.eventName)}`}
-                          title="Edit Event"
-                          className="flex items-center justify-center px-2 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg transition-colors shadow-lg hover:shadow-indigo-500/30 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-gray-900"
-                        >
-                          <span aria-hidden="true">✏️</span>
-                          <span className="sr-only">Edit event</span>
-                        </Link>
-                      </div>
-
-                      <button
-                        onClick={() => handleDeleteEvent(event.eventName)}
-                        className="w-full flex items-center justify-center px-4 py-2 bg-red-500/10 hover:bg-red-500/20 text-red-400 hover:text-red-300 text-sm font-medium rounded-lg transition-colors border border-red-500/30 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 focus:ring-offset-gray-900"
-                        aria-label={`Delete ${event.eventName}`}
-                      >
-                        <span className="mr-2" aria-hidden="true">
-                          🗑️
-                        </span>
-                        Delete Event
-                      </button>
-                    </div>
-                  </div>
+              {/* Header */}
+              <div className="p-5 bg-gradient-to-r from-blue-600/20 to-green-600/20">
+                <div className="flex justify-between">
+                  <h3 className="text-xl font-bold">{event.eventName}</h3>
+                  <button onClick={() => toggleFavorite(id)}>
+                    <Heart
+                      className={
+                        favorites.has(id)
+                          ? "text-red-500 fill-red-500"
+                          : "text-gray-400"
+                      }
+                    />
+                  </button>
                 </div>
-              );
-            })}
-          </div>
-        )}
+                <p className="text-sm text-gray-300 mt-2 line-clamp-2">
+                  {event.eventDescription}
+                </p>
+              </div>
+
+              {/* Body */}
+              <div className="p-5 flex-grow space-y-3">
+                <div className="flex items-center gap-2">
+                  <Calendar size={18} />
+                  {new Date(event.startDate).toLocaleString()}
+                </div>
+                <div className="flex items-center gap-2">
+                  <MapPin size={18} />
+                  {event.venueName}
+                </div>
+                <div className="text-xl font-bold text-blue-400">
+                  ${event.ticketPrice ?? 0}
+                </div>
+              </div>
+
+              {/* Actions */}
+              <div className="p-4 grid grid-cols-5 gap-2">
+                <button onClick={() => handleShare(event)}><Share2 /></button>
+                <button onClick={() => handleDownloadPNG(id)}><Download /></button>
+                <button onClick={() => handleDownloadPDF(event, id)}><FileText /></button>
+                <Link to={`/eventEdit/${event.eventName}`}><Edit /></Link>
+                <button onClick={() => handleDelete(event.eventName)}><Trash2 /></button>
+              </div>
+
+              <button
+                disabled={!upcoming}
+                onClick={() => navigate(`/event/${id}`)}
+                className={`m-4 py-3 rounded-xl font-bold flex items-center justify-center gap-2 ${
+                  upcoming
+                    ? "bg-gradient-to-r from-blue-600 to-green-600"
+                    : "bg-gray-700 cursor-not-allowed"
+                }`}
+              >
+                <Ticket />
+                {upcoming ? "Book Now" : "Event Ended"}
+                {upcoming && <ArrowRight />}
+              </button>
+            </div>
+          );
+        })}
       </div>
     </div>
   );
