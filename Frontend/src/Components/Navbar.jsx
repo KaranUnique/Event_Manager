@@ -1,208 +1,196 @@
-import { useState, useEffect, useRef } from "react"; // React hooks for state and side effects
-import { Link, useNavigate, Outlet } from "react-router-dom"; // React Router for navigation
-import Swal from 'sweetalert2'; // SweetAlert for handling alert popups
-import Background3D from './Background3D'; // Import the 3D Background
-import Footer from './Footer'; // Import Footer
-import { useUser } from '../context/UserContext'; // Import UserContext
+import { useEffect, useRef, useState } from "react";
+import { Link, NavLink, Outlet, useNavigate } from "react-router-dom";
+import Swal from "sweetalert2";
+import {
+  Home,
+  Calendar,
+  PlusCircle,
+  Ticket,
+  LogOut,
+  LogIn,
+  UserPlus,
+  Menu,
+  X,
+  ChevronDown,
+  Bell,
+  User,
+} from "lucide-react";
+import Footer from "./Footer";
 
 const Navbar = () => {
-    const [isDropdownOpen, setIsDropdownOpen] = useState(false); // New state to toggle dropdown
-    const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false); // State for mobile menu
-    const dropdownRef = useRef(null); // Reference to dropdown menu
-    const navigate = useNavigate();
-    const { isAuthenticated, logout: logoutUser, user } = useUser(); // Use UserContext
-    const isLoggedIn = isAuthenticated; // For backward compatibility
+  const navigate = useNavigate();
+  const dropdownRef = useRef(null);
 
-    // --------------------------- LOGOUT -----------------------------
-    const handleLogout = () => {
-        Swal.fire({
-            title: "Are you sure?",
-            text: "Do you want to log out?",
-            icon: "warning",
-            showCancelButton: true,
-            confirmButtonColor: '#3085d6',
-            cancelButtonColor: '#d33',
-            confirmButtonText: 'Yes, log out!',
-            cancelButtonText: 'Cancel',
-            background: '#1f2937',
-            color: '#fff'
-        }).then((result) => {
-            if (result.isConfirmed) {
-                logoutUser(); // Use logout function from UserContext
-                navigate('/login'); // Redirect to login page
-                Swal.fire({
-                    title: 'Logged out!',
-                    text: 'You have successfully logged out.',
-                    icon: 'success',
-                    background: '#1f2937',
-                    color: '#fff',
-                    confirmButtonColor: '#4f46e5'
-                });
-            }
-        });
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  /* ---------------- CHECK LOGIN ---------------- */
+  useEffect(() => {
+    const checkAuth = () => {
+      setIsLoggedIn(!!localStorage.getItem("authToken"));
     };
 
-    // ------------------ CLOSE DROPDOWN ON OUTSIDE CLICK ------------------
-    useEffect(() => {
-        const handleClickOutside = (e) => {
-            if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
-                setIsDropdownOpen(false);
-            }
-        };
-        document.addEventListener("mousedown", handleClickOutside);
-        return () => document.removeEventListener("mousedown", handleClickOutside);
-    }, []);
+    checkAuth();
+    window.addEventListener("auth-change", checkAuth);
+    return () => window.removeEventListener("auth-change", checkAuth);
+  }, []);
 
-    // ESC key closes dropdown
-    const handleDropdownKeyDown = (e) => {
-        if (e.key === "Escape") setIsDropdownOpen(false);
+  /* -------- CLOSE DROPDOWN ON OUTSIDE CLICK -------- */
+  useEffect(() => {
+    const handleClick = (e) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+        setIsDropdownOpen(false);
+      }
     };
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, []);
 
-    return (
-        <div className="min-h-screen relative">
-            <Background3D />
+  /* ---------------- LOGOUT ---------------- */
+  const handleLogout = () => {
+    Swal.fire({
+      title: "Logout?",
+      text: "Do you want to logout?",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonText: "Yes",
+    }).then((res) => {
+      if (res.isConfirmed) {
+        localStorage.removeItem("authToken");
+        setIsLoggedIn(false);
+        window.dispatchEvent(new Event("auth-change"));
+        navigate("/login");
+      }
+    });
+  };
 
-            {/* ---------------- NAVBAR ---------------- */}
-            <nav className="w-full bg-gray-900/80 backdrop-blur-md text-white py-4 shadow-lg sticky top-0 z-50">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="flex justify-between items-center">
+  /* ---------------- NAV LINKS ---------------- */
+  const navLinks = [
+    { to: "/home", label: "Home", icon: <Home size={18} />, auth: true },
+    { to: "/eventCard", label: "Events", icon: <Calendar size={18} />, auth: true },
+    { to: "/eventForm", label: "Create", icon: <PlusCircle size={18} />, auth: true },
+    { to: "/myBookings", label: "Bookings", icon: <Ticket size={18} />, auth: true },
+  ];
 
-                        {/* LOGO */}
-                        <Link to="/" className="text-white text-2xl md:text-3xl font-extrabold">
-                            EventBooking
-                        </Link>
+  return (
+    <div className="min-h-screen bg-gray-950 text-white">
+      {/* ---------------- NAVBAR ---------------- */}
+      <nav className="sticky top-0 z-50 bg-gray-900/80 backdrop-blur-md border-b border-gray-800 supports-[backdrop-filter]:bg-gray-900/60">
+        <div className="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
+          {/* LOGO */}
+          <Link to="/" className="text-2xl font-bold">
+            EventHub
+          </Link>
 
-                        {/* MOBILE MENU BUTTON */}
-                        <button
-                            className="md:hidden text-white"
-                            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                        >
-                            <svg className="w-8 h-8" fill="none" stroke="currentColor">
-                                <path
-                                    strokeWidth="2"
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    d={
-                                        isMobileMenuOpen
-                                            ? "M6 18L18 6M6 6l12 12"
-                                            : "M4 6h16M4 12h16M4 18h16"
-                                    }
-                                />
-                            </svg>
-                        </button>
+          {/* DESKTOP LINKS */}
+          <div className="hidden md:flex items-center gap-6">
+            {isLoggedIn && navLinks.map((l) => (
+              <NavLink
+                key={l.to}
+                to={l.to}
+                className={({ isActive }) =>
+                  `flex items-center gap-2 px-2 py-1 rounded-md transition-colors ${
+                    isActive ? "text-blue-400 bg-blue-500/10" : "hover:text-blue-400"
+                  }`
+                }
+              >
+                {l.icon}
+                {l.label}
+              </NavLink>
+            ))}
 
-                        {/* ---------------- DESKTOP LINKS ---------------- */}
-                        <div className="hidden md:flex space-x-6 items-center">
-                            <Link to="/eventDemo" className="nav-link">Event Demo</Link>
+            {!isLoggedIn ? (
+              <div className="flex gap-3">
+                <button onClick={() => navigate("/login")} className="flex items-center gap-1">
+                  <LogIn size={18} /> Login
+                </button>
+                <button onClick={() => navigate("/signUp")} className="flex items-center gap-1">
+                  <UserPlus size={18} /> Sign Up
+                </button>
+              </div>
+            ) : (
+              <div className="relative" ref={dropdownRef}>
+                <button
+                  onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                  className="flex items-center gap-2"
+                >
+                  <img
+                    src="https://randomuser.me/api/portraits/men/32.jpg"
+                    className="w-8 h-8 rounded-full"
+                    alt="user"
+                  />
+                  <ChevronDown size={16} />
+                </button>
 
-                            {isLoggedIn && (
-                                <>
-                                    <Link to="/home" className="nav-link">Home</Link>
-                                    <Link to="/eventCard" className="nav-link">All Events</Link>
-                                    <Link to="/eventForm" className="nav-link">Create Event</Link>
-                                    <Link to="/myBookings" className="nav-link">My Bookings</Link>
-                                </>
-                            )}
-
-                            <Link to="/about" className="nav-link">About</Link>
-                            <Link to="/contact" className="nav-link">Contact</Link>
-
-                            {/* THEME SWITCH BUTTON */}
-                            <ThemeToggle />
-
-                            {/* PROFILE / LOGIN BUTTONS */}
-                            {isLoggedIn ? (
-                                <div ref={dropdownRef} className="relative">
-                                    <button
-                                        onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                                        onKeyDown={handleDropdownKeyDown}
-                                        className="focus:outline-none"
-                                    >
-                                        <img
-                                            src="https://randomuser.me/api/portraits/men/32.jpg"
-                                            className="h-10 w-10 rounded-full border-2 border-indigo-500 hover:border-indigo-400"
-                                            alt="user"
-                                        />
-                                    </button>
-
-                                    {isDropdownOpen && (
-                                        <div className="dropdown-menu">
-                                            <Link
-                                                to="/profile"
-                                                className="dropdown-item"
-                                                onClick={() => setIsDropdownOpen(false)}
-                                            >
-                                                My Profile
-                                            </Link>
-
-                                            <button
-                                                onClick={() => {
-                                                    handleLogout();
-                                                    setIsDropdownOpen(false);
-                                                }}
-                                                className="dropdown-item w-full text-left"
-                                            >
-                                                Logout
-                                            </button>
-                                        </div>
-                                    )}
-                                </div>
-                            ) : (
-                                <div className="flex space-x-4">
-                                    <button onClick={() => navigate("/login")} className="btn-primary">Login</button>
-                                    <button onClick={() => navigate("/signUp")} className="btn-green">SignUp</button>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                </div>
-
-                {/* ---------------- MOBILE MENU ---------------- */}
-                {isMobileMenuOpen && (
-                    <div className="md:hidden bg-gray-900 px-2 py-3 space-y-2">
-                        <Link to="/about" className="mobile-link" onClick={() => setIsMobileMenuOpen(false)}>About</Link>
-                        <Link to="/contact" className="mobile-link" onClick={() => setIsMobileMenuOpen(false)}>Contact</Link>
-                        <Link to="/eventDemo" className="mobile-link" onClick={() => setIsMobileMenuOpen(false)}>Event Demo</Link>
-
-                        {isLoggedIn ? (
-                            <>
-                                <Link to="/home" className="mobile-link" onClick={() => setIsMobileMenuOpen(false)}>Home</Link>
-                                <Link to="/eventCard" className="mobile-link" onClick={() => setIsMobileMenuOpen(false)}>All Events</Link>
-                                <Link to="/eventForm" className="mobile-link" onClick={() => setIsMobileMenuOpen(false)}>Create Event</Link>
-                                <Link to="/myBookings" className="mobile-link" onClick={() => setIsMobileMenuOpen(false)}>My Bookings</Link>
-
-                                <button
-                                    onClick={() => {
-                                        handleLogout();
-                                        setIsMobileMenuOpen(false);
-                                    }}
-                                    className="mobile-link text-left"
-                                >
-                                    Logout
-                                </button>
-                            </>
-                        ) : (
-                            <div className="flex flex-col space-y-2 mt-2">
-                                <button onClick={() => { navigate("/login"); setIsMobileMenuOpen(false); }} className="btn-primary">
-                                    Login
-                                </button>
-                                <button onClick={() => { navigate("/signUp"); setIsMobileMenuOpen(false); }} className="btn-green">
-                                    SignUp
-                                </button>
-                            </div>
-                        )}
-                    </div>
+                {isDropdownOpen && (
+                  <div className="absolute right-0 mt-3 w-48 bg-gray-800 rounded-xl shadow-lg">
+                    <Link to="/profile" className="dropdown-item flex items-center gap-2 px-4 py-3">
+                      <User size={16} /> Profile
+                    </Link>
+                    <button
+                      onClick={handleLogout}
+                      className="w-full text-left px-4 py-3 text-red-400 hover:bg-gray-700"
+                    >
+                      <LogOut size={16} className="inline mr-2" />
+                      Logout
+                    </button>
+                  </div>
                 )}
-            </nav>
+              </div>
+            )}
+          </div>
 
-            {/* RENDER CHILD ROUTES */}
-            <div className="relative z-10">
-                <Outlet />
-            </div>
-
-            <Footer />
+          {/* MOBILE BUTTON */}
+          <button
+            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            className="md:hidden"
+          >
+            {isMobileMenuOpen ? <X /> : <Menu />}
+          </button>
         </div>
-    );
+
+        {/* ---------------- MOBILE MENU ---------------- */}
+        {isMobileMenuOpen && (
+          <div className="md:hidden bg-gray-900 px-4 pb-4 space-y-2">
+            {isLoggedIn &&
+              navLinks.map((l) => (
+                <NavLink
+                  key={l.to}
+                  to={l.to}
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className={({ isActive }) =>
+                    `block py-2 rounded-md px-2 ${isActive ? "text-blue-400 bg-blue-500/10" : "hover:text-blue-400"}`
+                  }
+                >
+                  {l.label}
+                </NavLink>
+              ))}
+
+            {!isLoggedIn ? (
+              <>
+                <button onClick={() => navigate("/login")} className="block w-full py-2">
+                  Login
+                </button>
+                <button onClick={() => navigate("/signUp")} className="block w-full py-2">
+                  Sign Up
+                </button>
+              </>
+            ) : (
+              <button onClick={handleLogout} className="block w-full py-2 text-red-400">
+                Logout
+              </button>
+            )}
+          </div>
+        )}
+      </nav>
+
+      {/* ---------------- PAGE CONTENT ---------------- */}
+      <Outlet />
+
+      <Footer />
+    </div>
+  );
 };
 
 export default Navbar;
